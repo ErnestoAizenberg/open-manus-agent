@@ -1,0 +1,4 @@
+openai>=1.0.0
+pyppeteer>=1.0.2
+python-dotenv>=1.0.0
+pyppeteer_stealth>=2.7.4
