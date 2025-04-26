@@ -1,8 +1,9 @@
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
-def execute_task_chain(task_chain, task_registry, user_data=None):
+async def execute_task_chain(task_chain, task_registry, user_data=None):
     results = []
     for task in task_chain:
         action = task.get("action")
@@ -22,7 +23,11 @@ def execute_task_chain(task_chain, task_registry, user_data=None):
             
         try:
             logger.info(f"Executing task: {action} with params: {params}")
-            result = func(**params)
+            if asyncio.iscoroutinefunction(func):
+                result = await func(**params)  # Await if the function is async
+            else:
+                result = await asyncio.to_thread(func, **params)  # Run blocking function in a thread
+                
             results.append(f"✅ {action}: {result}")
         except Exception as e:
             error_msg = f"⚠️ {action} error: {str(e)}"
