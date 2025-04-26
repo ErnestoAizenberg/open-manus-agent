@@ -1,26 +1,36 @@
 import logging
 import asyncio
+from typing import List, Dict, Any, Optional, Callable
 
 logger = logging.getLogger(__name__)
 
-async def execute_task_chain(task_chain, task_registry, user_data=None):
-    results = []
+async def execute_task_chain(
+    task_chain: List[Dict[str, Any]],
+    task_registry: Dict[str, Callable],
+    user_data: Optional[Dict[str, Any]] = None
+) -> List[str]:
+    results: List[str] = []
+    assert isinstance(task, dict)
     for task in task_chain:
+        if not isinstance(task, dict):
+            results.append("❌ Task is not a dictionary")
+            continue
+            
         action = task.get("action")
         params = task.get("params", {})
-        
+
         if not action:
             results.append("❌ Task missing 'action' field")
             continue
-            
+
         if user_data:
             params["user_data"] = user_data
-            
+
         func = task_registry.get(action)
         if not func:
             results.append(f"❌ Task '{action}' not found in registry")
             continue
-            
+
         try:
             logger.info(f"Executing task: {action} with params: {params}")
             if asyncio.iscoroutinefunction(func):
@@ -33,5 +43,5 @@ async def execute_task_chain(task_chain, task_registry, user_data=None):
             error_msg = f"⚠️ {action} error: {str(e)}"
             logger.error(error_msg, exc_info=True)
             results.append(error_msg)
-            
+
     return results
