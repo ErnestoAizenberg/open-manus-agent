@@ -10,7 +10,10 @@ async def execute_task_chain(
     user_data: Optional[Dict[str, Any]] = None
 ) -> List[str]:
     results: List[str] = []
-    assert isinstance(task_registry, dict)
+    
+    if not isinstance(task_registry, dict):
+        raise TypeError(f"task_registry support to be a dictionary not a {type(task_registry)}")
+        
     for task in task_chain:
         if not isinstance(task, dict):
             results.append("❌ Task is not a dictionary")
