@@ -1,67 +1,53 @@
-from tasks.open_url import open_url
-from tasks.fill import fill
-from tasks.click import click
-from tasks.check_checkbox import check_checkbox
-from tasks.check_element import check_element
-from tasks.check_text import check_text
-from tasks.clear_cookies import clear_cookies
-from tasks.click_captcha_checkbox import click_captcha_checkbox
-from tasks.confirm_registration import confirm_registration
-from tasks.extract_code_from_text import extract_code_from_text
-from tasks.get_inner_text import get_inner_text
-from tasks.go_back import go_back
-from tasks.hover import hover
-from tasks.load_session import load_session
-from tasks.log_registration_result import log_registration_result
-from tasks.paste_code import paste_code
-from tasks.random_delay import random_delay
-from tasks.refresh import refresh
-from tasks.save_session import save_session
-from tasks.screenshot import screenshot
-from tasks.scroll_to import scroll_to
-from tasks.select_dropdown import select_dropdown
-from tasks.set_user_agent import set_user_agent
-from tasks.sleep import sleep
-from tasks.solve_captcha import solve_captcha
-from tasks.submit_form import submit_form
-from tasks.switch_tab import switch_tab
-from tasks.uncheck_checkbox import uncheck_checkbox
-from tasks.upload_file import upload_file
-from tasks.wait_captcha_frame import wait_captcha_frame
-from tasks.wait_email import wait_email
-from tasks.wait_for import wait_for
+from typing import Callable, Dict
+import tasks
 
-task_registry = {
-    "open_url": open_url,
-    "fill": fill,
-    "click": click,
-    "check_checkbox": check_checkbox,
-    "check_element": check_element,
-    "check_text": check_text,
-    "clear_cookies": clear_cookies,
-    "click_captcha_checkbox": click_captcha_checkbox,
-    "confirm_registration": confirm_registration,
-    "extract_code_from_text": extract_code_from_text,
-    "get_inner_text": get_inner_text,
-    "go_back": go_back,
-    "hover": hover,
-    "load_session": load_session,
-    "log_registration_result": log_registration_result,
-    "paste_code": paste_code,
-    "random_delay": random_delay,
-    "refresh": refresh,
-    "save_session": save_session,
-    "screenshot": screenshot,
-    "scroll_to": scroll_to,
-    "select_dropdown": select_dropdown,
-    "set_user_agent": set_user_agent,
-    "sleep": sleep,
-    "solve_captcha": solve_captcha,
-    "submit_form": submit_form,
-    "switch_tab": switch_tab,
-    "uncheck_checkbox": uncheck_checkbox,
-    "upload_file": upload_file,
-    "wait_captcha_frame": wait_captcha_frame,
-    "wait_email": wait_email,
-    "wait_for": wait_for
+task_registry: Dict[str, Callable] = {
+    "open_url": tasks.open_url,
+    "fill": tasks.fill,
+    "click": tasks.click,
+    "check_checkbox": tasks.check_checkbox,
+    "check_element": tasks.check_element,
+    "check_text": tasks.check_text,
+    "clear_cookies": tasks.clear_cookies,
+    "click_captcha_checkbox": tasks.click_captcha_checkbox,
+    "confirm_registration": tasks.confirm_registration,
+    "extract_code_from_text": tasks.extract_code_from_text,
+    "get_inner_text": tasks.get_inner_text,
+    "go_back": tasks.go_back,
+    "hover": tasks.hover,
+    "load_session": tasks.load_session,
+    "log_registration_result": tasks.log_registration_result,
+    "paste_code": tasks.paste_code,
+    "random_delay": tasks.random_delay,
+    "refresh": tasks.refresh,
+    "save_session": tasks.save_session,
+    "screenshot": tasks.screenshot,
+    "scroll_to": tasks.scroll_to,
+    "select_dropdown": tasks.select_dropdown,
+    "set_user_agent": tasks.set_user_agent,
+    "sleep": tasks.sleep,
+    "submit_form": tasks.submit_form,
+    "switch_tab": tasks.switch_tab,
+    "uncheck_checkbox": tasks.uncheck_checkbox,
+    "upload_file": tasks.upload_file,
+    "wait_captcha_frame": tasks.wait_captcha_frame,
+    "wait_email": tasks.wait_email,
+    "wait_for": tasks.wait_for,
+    "check_element_contains_text": tasks.check_element_contains_text,
+    "click_link_with_text": tasks.click_link_with_text,
+    "detect_captcha_type": tasks.detect_captcha_type,
+    "download_file": tasks.download_file,
+    "extract_emails_from_page": tasks.extract_emails_from_page,
+    "get_links_from_selector": tasks.get_links_from_selector,
+    "move_mouse": tasks.move_mouse,
+    "press_enter": tasks.press_enter,
+    "read_paths_from_file": tasks.read_paths_from_file,
+    "run_multiple_sessions_from_file": tasks.run_multiple_sessions_from_file,
+    "setup_octo_session_from_folder": tasks.setup_octo_session_from_folder,
+    "solve_best_captcha": tasks.solve_best_captcha,
+    "solve_captcha_2captcha": tasks.solve_captcha_2captcha,
+    "solve_captcha_anticaptcha": tasks.solve_captcha_anticaptcha,
+    "solve_captcha_capmonster": tasks.solve_captcha_capmonster,
+    "solve_captcha_rucaptcha": tasks.solve_captcha_rucaptcha,
+    "type_slow": tasks.type_slow,
 }

@@ -1,257 +1,403 @@
-from pyppeteer import launch
-from pyppeteer.errors import PageError, TimeoutError
 import asyncio
 import json
 import os
+from typing import Optional, List, Dict, Any
 
-_browser = None
-_page = None
-_event_loop = None
-
-async def init_browser(headless=False, user_data_dir=None, args=None):
-    global _browser, _page, _event_loop
-    _event_loop = asyncio.get_event_loop()
-    
-    default_args = ['--no-sandbox', '--disable-setuid-sandbox']
-    if args:
-        default_args.extend(args)
-    
-    _browser = await launch(
-        headless=headless,
-        args=default_args,
-        userDataDir=user_data_dir,
-        ignoreHTTPSErrors=True
-    )
-    _page = await _browser.newPage()
-    await _page.setViewport({'width': 1280, 'height': 800})
-
-async def close_browser():
-    if _browser:
-        await _browser.close()
-
-async def open_url(url, timeout=30000):
-    try:
-        await _page.goto(url, {'waitUntil': 'networkidle2', 'timeout': timeout})
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to open URL {url}: {str(e)}")
-
-async def fill(selector, text, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        await _page.type(selector, text)
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to fill {selector}: {str(e)}")
-
-async def click(selector, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        await _page.click(selector)
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to click {selector}: {str(e)}")
-
-async def check_checkbox(selector, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        await _page.evaluate(f'document.querySelector("{selector}").checked = true')
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to check checkbox {selector}: {str(e)}")
-
-async def check_element(selector, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        return True
-    except:
-        return False
-
-async def check_text(text, timeout=5000):
-    try:
-        content = await _page.content()
-        return text in content
-    except Exception as e:
-        raise Exception(f"Failed to check text: {str(e)}")
-
-async def clear_cookies():
-    try:
-        await _page.deleteCookie()
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to clear cookies: {str(e)}")
-
-async def get_inner_text(selector, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        return await _page.evaluate(f'document.querySelector("{selector}").innerText')
-    except Exception as e:
-        raise Exception(f"Failed to get text from {selector}: {str(e)}")
-
-async def save_session(path="session.json"):
-    try:
-        cookies = await _page.cookies()
-        with open(path, 'w') as f:
-            json.dump(cookies, f)
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to save session: {str(e)}")
-
-async def load_session(path="session.json"):
-    try:
-        with open(path, 'r') as f:
-            cookies = json.load(f)
-            await _page.setCookie(*cookies)
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to load session: {str(e)}")
+from managers.captcha_manager import CaptchaSolver
+from pyppeteer import launch
+from pyppeteer.errors import PageError, TimeoutError
 
 
+class BrowserManager:
+    def __init__(self):
+        self._browser = None
+        self._page = None
+        self._event_loop = None
+        self._captcha_solver = CaptchaSolver()
 
-async def click_captcha_checkbox(selector, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        await _page.click(selector)
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to click captcha checkbox {selector}: {str(e)}")
+    async def init_browser(self, headless: bool = False, user_data_dir: Optional[str] = None, args: Optional[List[str]] = None) -> None:
+        """Initialize the browser instance."""
+        self._event_loop = asyncio.get_event_loop()
 
-async def confirm_registration(selector, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        await _page.click(selector)
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to confirm registration {selector}: {str(e)}")
+        default_args = ["--no-sandbox", "--disable-setuid-sandbox"]
+        if args:
+            default_args.extend(args)
 
-async def extract_code_from_text(selector, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        return await _page.evaluate(f'document.querySelector("{selector}").innerText')
-    except Exception as e:
-        raise Exception(f"Failed to extract code from {selector}: {str(e)}")
+        self._browser = await launch(
+            headless=headless,
+            args=default_args,
+            userDataDir=user_data_dir,
+            ignoreHTTPSErrors=True,
+        )
+        self._page = await self._browser.newPage()
+        await self._page.setViewport({"width": 1280, "height": 800})
+        await self._captcha_solver.set_page(self._page)
 
-async def hover(selector, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        await _page.hover(selector)
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to hover over {selector}: {str(e)}")
+    async def close_browser(self) -> None:
+        """Close the browser instance."""
+        if self._browser:
+            await self._browser.close()
 
-async def random_delay(min_delay=100, max_delay=1000):
-    import random
-    import time
-    delay = random.randint(min_delay, max_delay) / 1000  # convert millis to seconds
-    await asyncio.sleep(delay)
-
-async def refresh():
-    try:
-        await _page.reload({'waitUntil': 'networkidle2'})
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to refresh page: {str(e)}")
-
-async def screenshot(path):
-    try:
-        await _page.screenshot({'path': path})
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to take screenshot: {str(e)}")
-
-async def scroll_to(selector, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        element = await _page.querySelector(selector)
-        await _page.evaluate('(element) => element.scrollIntoView()', element)
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to scroll to {selector}: {str(e)}")
-
-async def select_dropdown(selector, value, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        await _page.select(selector, value)
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to select dropdown {selector}: {str(e)}")
-
-async def set_user_agent(user_agent):
-    await _page.setUserAgent(user_agent)
-
-async def sleep(seconds):
-    await asyncio.sleep(seconds)
-
-async def solve_captcha():
-    raise NotImplementedError("This method is not implemented yet.")
-    pass
-
-async def submit_form(selector):
-    try:
-        await _page.waitForSelector(selector)
-        await _page.click(selector)
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to submit form {selector}: {str(e)}")
-
-async def switch_tab(tab_index):
-    try:
-        pages = await _browser.pages()
-        if len(pages) > tab_index:
-            global _page
-            _page = pages[tab_index]
+    async def open_url(self, url: str, timeout: int = 30000) -> bool:
+        """Navigate to the specified URL."""
+        try:
+            await self._page.goto(url, {"waitUntil": "networkidle2", "timeout": timeout})
             return True
-        else:
-            raise Exception(f"Tab index {tab_index} is out of range.")
-    except Exception as e:
-        raise Exception(f"Failed to switch to tab {tab_index}: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Failed to open URL {url}: {str(e)}")
 
-async def uncheck_checkbox(selector, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        await _page.evaluate(f'document.querySelector("{selector}").checked = false')
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to uncheck checkbox {selector}: {str(e)}")
+    async def fill(self, selector: str, text: str, timeout: int = 5000) -> bool:
+        """Fill a form field with the specified text."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            await self._page.type(selector, text)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to fill {selector}: {str(e)}")
 
-async def upload_file(selector, file_path, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        await _page.uploadFile(selector, file_path)
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to upload file to {selector}: {str(e)}")
+    async def click(self, selector: str, timeout: int = 5000) -> bool:
+        """Click on the specified element."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            await self._page.click(selector)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to click {selector}: {str(e)}")
 
-async def wait_captcha_frame(timeout=5000):
-    try:
-        await _page.waitForSelector('iframe[title="captcha"]', {'timeout': timeout})
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to wait for captcha frame: {str(e)}")
+    async def check_checkbox(self, selector: str, timeout: int = 5000) -> bool:
+        """Check a checkbox element."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            await self._page.evaluate(f'document.querySelector("{selector}").checked = true')
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to check checkbox {selector}: {str(e)}")
 
-async def wait_email(filter_func, timeout=300):
-    raise NotImplementedError("This method is not implemented yet.")
+    async def check_element(self, selector: str, timeout: int = 5000) -> bool:
+        """Check if an element exists on the page."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            return True
+        except:
+            return False
 
-async def wait_for(selector, timeout=5000):
-    try:
-        await _page.waitForSelector(selector, {'timeout': timeout})
-        return True
-    except Exception as e:
-        raise Exception(f"Failed to wait for {selector}: {str(e)}")
+    async def check_text(self, text: str, timeout: int = 5000) -> bool:
+        """Check if text exists on the page."""
+        try:
+            content = await self._page.content()
+            return text in content
+        except Exception as e:
+            raise Exception(f"Failed to check text: {str(e)}")
 
-async def go_back(timeout=30000):
-    global _page
-    try:
-        # Attempt to navigate back to the previous page in the history.
-        await _page.goBack({"waitUntil": "networkidle2", "timeout": timeout})
-        return True
-    except PageError as e:
-        print(f"Page error: {e}")
-        return False
-    except TimeoutError as e:
-        print(f"Timeout error: {e}")
-        return False
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return False
+    async def clear_cookies(self) -> bool:
+        """Clear all cookies."""
+        try:
+            await self._page.deleteCookie()
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to clear cookies: {str(e)}")
 
+    async def get_inner_text(self, selector: str, timeout: int = 5000) -> str:
+        """Get the inner text of an element."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            return await self._page.evaluate(f'document.querySelector("{selector}").innerText')
+        except Exception as e:
+            raise Exception(f"Failed to get text from {selector}: {str(e)}")
+
+    async def save_session(self, path: str = "session.json") -> bool:
+        """Save the current session cookies to a file."""
+        try:
+            cookies = await self._page.cookies()
+            with open(path, "w") as f:
+                json.dump(cookies, f)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to save session: {str(e)}")
+
+    async def load_session(self, path: str = "session.json") -> bool:
+        """Load a session from cookies file."""
+        try:
+            with open(path, "r") as f:
+                cookies = json.load(f)
+                await self._page.setCookie(*cookies)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to load session: {str(e)}")
+
+    async def click_captcha_checkbox(self, selector: str, timeout: int = 5000) -> bool:
+        """Click on a captcha checkbox."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            await self._page.click(selector)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to click captcha checkbox {selector}: {str(e)}")
+
+    async def confirm_registration(self, selector: str, timeout: int = 5000) -> bool:
+        """Confirm registration by clicking a button."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            await self._page.click(selector)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to confirm registration {selector}: {str(e)}")
+
+    async def extract_code_from_text(self, selector: str, timeout: int = 5000) -> str:
+        """Extract code/text from an element."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            return await self._page.evaluate(f'document.querySelector("{selector}").innerText')
+        except Exception as e:
+            raise Exception(f"Failed to extract code from {selector}: {str(e)}")
+
+    async def hover(self, selector: str, timeout: int = 5000) -> bool:
+        """Hover over an element."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            await self._page.hover(selector)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to hover over {selector}: {str(e)}")
+
+    async def random_delay(self, min_delay: int = 100, max_delay: int = 1000) -> None:
+        """Add a random delay between actions."""
+        import random
+        delay = random.randint(min_delay, max_delay) / 1000  # convert millis to seconds
+        await asyncio.sleep(delay)
+
+    async def refresh(self) -> bool:
+        """Refresh the current page."""
+        try:
+            await self._page.reload({"waitUntil": "networkidle2"})
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to refresh page: {str(e)}")
+
+    async def screenshot(self, path: str) -> bool:
+        """Take a screenshot of the current page."""
+        try:
+            await self._page.screenshot({"path": path})
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to take screenshot: {str(e)}")
+
+    async def scroll_to(self, selector: str, timeout: int = 5000) -> bool:
+        """Scroll to a specific element."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            element = await self._page.querySelector(selector)
+            await self._page.evaluate("(element) => element.scrollIntoView()", element)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to scroll to {selector}: {str(e)}")
+
+    async def select_dropdown(self, selector: str, value: str, timeout: int = 5000) -> bool:
+        """Select an option from a dropdown."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            await self._page.select(selector, value)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to select dropdown {selector}: {str(e)}")
+
+    async def set_user_agent(self, user_agent: str) -> None:
+        """Set the user agent for the browser."""
+        await self._page.setUserAgent(user_agent)
+
+    async def sleep(self, seconds: float) -> None:
+        """Sleep for the specified number of seconds."""
+        await asyncio.sleep(seconds)
+
+    async def submit_form(self, selector: str) -> bool:
+        """Submit a form."""
+        try:
+            await self._page.waitForSelector(selector)
+            await self._page.click(selector)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to submit form {selector}: {str(e)}")
+
+    async def switch_tab(self, tab_index: int) -> bool:
+        """Switch to a different browser tab."""
+        try:
+            pages = await self._browser.pages()
+            if len(pages) > tab_index:
+                self._page = pages[tab_index]
+                await self._captcha_solver.set_page(self._page)
+                return True
+            else:
+                raise Exception(f"Tab index {tab_index} is out of range.")
+        except Exception as e:
+            raise Exception(f"Failed to switch to tab {tab_index}: {str(e)}")
+
+    async def uncheck_checkbox(self, selector: str, timeout: int = 5000) -> bool:
+        """Uncheck a checkbox."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            await self._page.evaluate(f'document.querySelector("{selector}").checked = false')
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to uncheck checkbox {selector}: {str(e)}")
+
+    async def upload_file(self, selector: str, file_path: str, timeout: int = 5000) -> bool:
+        """Upload a file to a file input."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            await self._page.uploadFile(selector, file_path)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to upload file to {selector}: {str(e)}")
+
+    async def wait_captcha_frame(self, timeout: int = 5000) -> bool:
+        """Wait for a captcha frame to load."""
+        try:
+            await self._page.waitForSelector('iframe[title="captcha"]', {"timeout": timeout})
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to wait for captcha frame: {str(e)}")
+
+    async def wait_email(self, filter_func, timeout: int = 300) -> None:
+        """Wait for an email (not implemented)."""
+        raise NotImplementedError("This method is not implemented yet.")
+
+    async def wait_for(self, selector: str, timeout: int = 5000) -> bool:
+        """Wait for an element to appear."""
+        try:
+            await self._page.waitForSelector(selector, {"timeout": timeout})
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to wait for {selector}: {str(e)}")
+
+    async def move_mouse(self, x: int, y: int) -> bool:
+        """Move the mouse to specific coordinates."""
+        try:
+            await self._page.mouse.move(x, y)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to move mouse to ({x}, {y}): {str(e)}")
+
+    async def type_slow(self, selector: str, text: str, delay: float = 0.1) -> bool:
+        """Type text slowly to simulate human typing."""
+        try:
+            await self._page.waitForSelector(selector)
+            for char in text:
+                await self._page.type(selector, char)
+                await asyncio.sleep(delay)
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to type slowly in {selector}: {str(e)}")
+
+    async def press_enter(self) -> bool:
+        """Press the Enter key."""
+        try:
+            await self._page.keyboard.press("Enter")
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to press Enter: {str(e)}")
+
+    async def get_links_from_selector(self, selector: str) -> List[str]:
+        """Get all links matching the selector."""
+        try:
+            await self._page.waitForSelector(selector)
+            links = await self._page.evaluate(
+                f"""
+                Array.from(document.querySelectorAll('{selector}'))
+                    .map(element => element.href)
+            """
+            )
+            return [link for link in links if link]  # Filter out None/empty links
+        except Exception as e:
+            raise Exception(f"Failed to get links from {selector}: {str(e)}")
+
+    async def click_link_with_text(self, text: str) -> bool:
+        """Click a link containing specific text."""
+        try:
+            await self._page.evaluate(
+                f"""
+                const links = Array.from(document.querySelectorAll('a'));
+                const target = links.find(link => link.textContent.includes('{text}'));
+                if (target) target.click();
+            """
+            )
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to click link with text '{text}': {str(e)}")
+
+    async def extract_emails_from_page(self) -> List[str]:
+        """Extract all email addresses from the page."""
+        try:
+            content = await self._page.content()
+            import re
+            email_regex = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
+            emails = re.findall(email_regex, content)
+            return list(set(emails))  # Remove duplicates
+        except Exception as e:
+            raise Exception(f"Failed to extract emails: {str(e)}")
+
+    async def download_file(self, url: str) -> bool:
+        """Download a file from the specified URL."""
+        try:
+            await self._page.goto(url, {"waitUntil": "networkidle2"})
+            return True
+        except Exception as e:
+            raise Exception(f"Failed to download file from {url}: {str(e)}")
+
+    async def check_element_contains_text(self, selector: str, text: str) -> bool:
+        """Check if an element contains specific text."""
+        try:
+            await self._page.waitForSelector(selector)
+            element_text = await self._page.evaluate(
+                f"""
+                document.querySelector('{selector}').textContent
+            """
+            )
+            return text in element_text
+        except Exception as e:
+            raise Exception(f"Failed to check text in {selector}: {str(e)}")
+
+    async def go_back(self, timeout: int = 30000) -> bool:
+        """Navigate back in browser history."""
+        try:
+            await self._page.goBack({"waitUntil": "networkidle2", "timeout": timeout})
+            return True
+        except PageError as e:
+            print(f"Page error: {e}")
+            return False
+        except TimeoutError as e:
+            print(f"Timeout error: {e}")
+            return False
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            return False
+
+    async def solve_captcha_2captcha(self, api_key: str, **kwargs) -> bool:
+        """Solve captcha using 2captcha service."""
+        return await self._captcha_solver.solve_captcha("2captcha", api_key, **kwargs)
+
+    async def solve_captcha_capmonster(self, api_key: str, **kwargs) -> bool:
+        """Solve captcha using CapMonster service."""
+        return await self._captcha_solver.solve_captcha("capmonster", api_key, **kwargs)
+
+    async def solve_captcha_anticaptcha(self, api_key: str, **kwargs) -> bool:
+        """Solve captcha using AntiCaptcha service."""
+        return await self._captcha_solver.solve_captcha("anticaptcha", api_key, **kwargs)
+
+    async def solve_captcha_rucaptcha(self, api_key: str, **kwargs) -> bool:
+        """Solve captcha using RuCaptcha service."""
+        return await self._captcha_solver.solve_captcha("rucaptcha", api_key, **kwargs)
+
+    async def detect_captcha_type(self) -> tuple:
+        """Detect the type of captcha on the page."""
+        captcha_type, sitekey = await self._captcha_solver.detect_captcha_type()
+        return captcha_type.value, sitekey
+
+    @property
+    def page(self):
+        """Get the current page object."""
+        return self._page
+
+    @property
+    def browser(self):
+        """Get the browser object."""
+        return self._browser
