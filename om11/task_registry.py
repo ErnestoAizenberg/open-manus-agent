@@ -1,7 +1,7 @@
 from typing import Callable, Dict
-import tasks
 
-task_registry: Dict[str, Callable] = {
+def register_tasks(tasks: 'Tasks'):
+    task_registry: Dict[str, Callable] = {
     "open_url": tasks.open_url,
     "fill": tasks.fill,
     "click": tasks.click,
@@ -50,4 +50,5 @@ task_registry: Dict[str, Callable] = {
     "solve_captcha_capmonster": tasks.solve_captcha_capmonster,
     "solve_captcha_rucaptcha": tasks.solve_captcha_rucaptcha,
     "type_slow": tasks.type_slow,
-}
+    }
+    return task_registry
