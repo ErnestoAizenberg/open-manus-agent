@@ -20,8 +20,8 @@ async def main():
             if user_input.lower() == 'exit':
                 break
             result = await handle_command(
+                user_input, 
                 task_registry,
-                user_input,
             )
             print("\n".join(result))
     finally:
