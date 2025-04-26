@@ -13,7 +13,7 @@ async def main():
             user_input = input("Введите команду (или 'exit' для выхода): ")
             if user_input.lower() == 'exit':
                 break
-            result = handle_command(user_input)
+            result = await handle_command(user_input)
             print("\n".join(result))
     finally:
         await browser_manager.close_browser()
