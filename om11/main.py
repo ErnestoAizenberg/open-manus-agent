@@ -7,6 +7,9 @@ from handle_command import handle_command
 from task_registry import register_tasks
 
 logging.basicConfig(level=logging.INFO)
+
+headless = os.getenv('HEADLESS', 'true').lower() == 'true'
+
 browser_manager = BrowserManager()
 tasks = Tasks(browser_manager)                      
 task_registry = register_tasks(tasks)
@@ -14,7 +17,7 @@ task_registry = register_tasks(tasks)
 
 async def main():
     try:
-        await browser_manager.init_browser(headless=True)
+        await browser_manager.init_browser(headless=headless)
         while True:
             user_input = input("Введите команду (или 'exit' для выхода): ")
             if user_input.lower() == 'exit':
