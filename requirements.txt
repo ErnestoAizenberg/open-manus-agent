@@ -1,7 +1,7 @@
-openai>=1.0.0
-pyppeteer>=1.0.2
-python-dotenv>=1.0.0
-pyppeteer_stealth>=2.7.4
-websockets<15.1.0,>=13.0.0
-python_anticaptcha
-capmonstercloudclient
+openai>=0.1.0
+pyppeteer>=0.0.1
+python-dotenv>=0.1.0
+pyppeteer_stealth>=2.0.0
+websockets>=10.0
+python_anticaptcha>=0.1.0
+capmonstercloudclient>=0.1.0
