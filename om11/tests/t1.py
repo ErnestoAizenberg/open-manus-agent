@@ -1,7 +1,9 @@
 import asyncio
+
+from command_executor import CommandExecutor
 from pyppeteer import connect
 from pyppeteer.errors import NetworkError
-from command_executor import CommandExecutor
+
 
 async def test_manus_agent_on_browserstack():
     # Конфигурация BrowserStack
@@ -42,9 +44,10 @@ async def test_manus_agent_on_browserstack():
     except Exception as e:
         print(f"❌ Неожиданная ошибка: {str(e)}")
     finally:
-        if 'browser' in locals():
+        if "browser" in locals():
             await browser.close()
         print("Сессия завершена")
+
 
 if __name__ == "__main__":
     asyncio.run(test_manus_agent_on_browserstack())

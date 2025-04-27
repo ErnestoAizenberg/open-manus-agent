@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

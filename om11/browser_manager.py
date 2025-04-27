@@ -1,7 +1,7 @@
 import asyncio
 import json
 import os
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from managers.captcha_manager import CaptchaSolver
 from pyppeteer import launch
@@ -15,7 +15,12 @@ class BrowserManager:
         self._event_loop = None
         self._captcha_solver = CaptchaSolver()
 
-    async def init_browser(self, headless: bool = False, user_data_dir: Optional[str] = None, args: Optional[List[str]] = None) -> None:
+    async def init_browser(
+        self,
+        headless: bool = False,
+        user_data_dir: Optional[str] = None,
+        args: Optional[List[str]] = None,
+    ) -> None:
         """Initialize the browser instance."""
         self._event_loop = asyncio.get_event_loop()
 
@@ -41,7 +46,9 @@ class BrowserManager:
     async def open_url(self, url: str, timeout: int = 30000) -> bool:
         """Navigate to the specified URL."""
         try:
-            await self._page.goto(url, {"waitUntil": "networkidle2", "timeout": timeout})
+            await self._page.goto(
+                url, {"waitUntil": "networkidle2", "timeout": timeout}
+            )
             return True
         except Exception as e:
             raise Exception(f"Failed to open URL {url}: {str(e)}")
@@ -68,7 +75,9 @@ class BrowserManager:
         """Check a checkbox element."""
         try:
             await self._page.waitForSelector(selector, {"timeout": timeout})
-            await self._page.evaluate(f'document.querySelector("{selector}").checked = true')
+            await self._page.evaluate(
+                f'document.querySelector("{selector}").checked = true'
+            )
             return True
         except Exception as e:
             raise Exception(f"Failed to check checkbox {selector}: {str(e)}")
@@ -101,7 +110,9 @@ class BrowserManager:
         """Get the inner text of an element."""
         try:
             await self._page.waitForSelector(selector, {"timeout": timeout})
-            return await self._page.evaluate(f'document.querySelector("{selector}").innerText')
+            return await self._page.evaluate(
+                f'document.querySelector("{selector}").innerText'
+            )
         except Exception as e:
             raise Exception(f"Failed to get text from {selector}: {str(e)}")
 
@@ -147,7 +158,9 @@ class BrowserManager:
         """Extract code/text from an element."""
         try:
             await self._page.waitForSelector(selector, {"timeout": timeout})
-            return await self._page.evaluate(f'document.querySelector("{selector}").innerText')
+            return await self._page.evaluate(
+                f'document.querySelector("{selector}").innerText'
+            )
         except Exception as e:
             raise Exception(f"Failed to extract code from {selector}: {str(e)}")
 
@@ -163,6 +176,7 @@ class BrowserManager:
     async def random_delay(self, min_delay: int = 100, max_delay: int = 1000) -> None:
         """Add a random delay between actions."""
         import random
+
         delay = random.randint(min_delay, max_delay) / 1000  # convert millis to seconds
         await asyncio.sleep(delay)
 
@@ -192,7 +206,9 @@ class BrowserManager:
         except Exception as e:
             raise Exception(f"Failed to scroll to {selector}: {str(e)}")
 
-    async def select_dropdown(self, selector: str, value: str, timeout: int = 5000) -> bool:
+    async def select_dropdown(
+        self, selector: str, value: str, timeout: int = 5000
+    ) -> bool:
         """Select an option from a dropdown."""
         try:
             await self._page.waitForSelector(selector, {"timeout": timeout})
@@ -235,12 +251,16 @@ class BrowserManager:
         """Uncheck a checkbox."""
         try:
             await self._page.waitForSelector(selector, {"timeout": timeout})
-            await self._page.evaluate(f'document.querySelector("{selector}").checked = false')
+            await self._page.evaluate(
+                f'document.querySelector("{selector}").checked = false'
+            )
             return True
         except Exception as e:
             raise Exception(f"Failed to uncheck checkbox {selector}: {str(e)}")
 
-    async def upload_file(self, selector: str, file_path: str, timeout: int = 5000) -> bool:
+    async def upload_file(
+        self, selector: str, file_path: str, timeout: int = 5000
+    ) -> bool:
         """Upload a file to a file input."""
         try:
             await self._page.waitForSelector(selector, {"timeout": timeout})
@@ -252,7 +272,9 @@ class BrowserManager:
     async def wait_captcha_frame(self, timeout: int = 5000) -> bool:
         """Wait for a captcha frame to load."""
         try:
-            await self._page.waitForSelector('iframe[title="captcha"]', {"timeout": timeout})
+            await self._page.waitForSelector(
+                'iframe[title="captcha"]', {"timeout": timeout}
+            )
             return True
         except Exception as e:
             raise Exception(f"Failed to wait for captcha frame: {str(e)}")
@@ -329,6 +351,7 @@ class BrowserManager:
         try:
             content = await self._page.content()
             import re
+
             email_regex = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
             emails = re.findall(email_regex, content)
             return list(set(emails))  # Remove duplicates
@@ -381,7 +404,9 @@ class BrowserManager:
 
     async def solve_captcha_anticaptcha(self, api_key: str, **kwargs) -> bool:
         """Solve captcha using AntiCaptcha service."""
-        return await self._captcha_solver.solve_captcha("anticaptcha", api_key, **kwargs)
+        return await self._captcha_solver.solve_captcha(
+            "anticaptcha", api_key, **kwargs
+        )
 
     async def solve_captcha_rucaptcha(self, api_key: str, **kwargs) -> bool:
         """Solve captcha using RuCaptcha service."""

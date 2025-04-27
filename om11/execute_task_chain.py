@@ -1,24 +1,27 @@
-import logging
 import asyncio
-from typing import List, Dict, Any, Optional, Callable
+import logging
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
+
 
 async def execute_task_chain(
     task_chain: List[Dict[str, Any]],
     task_registry: Dict[str, Callable],
-    user_data: Optional[Dict[str, Any]] = None
+    user_data: Optional[Dict[str, Any]] = None,
 ) -> List[str]:
     results: List[str] = []
-    
+
     if not isinstance(task_registry, dict):
-        raise TypeError(f"task_registry support to be a dictionary not a {type(task_registry)}")
-        
+        raise TypeError(
+            f"task_registry support to be a dictionary not a {type(task_registry)}"
+        )
+
     for task in task_chain:
         if not isinstance(task, dict):
             results.append("❌ Task is not a dictionary")
             continue
-            
+
         action = task.get("action")
         params = task.get("params", {})
 
@@ -39,8 +42,10 @@ async def execute_task_chain(
             if asyncio.iscoroutinefunction(func):
                 result = await func(**params)  # Await if the function is async
             else:
-                result = await asyncio.to_thread(func, **params)  # Run blocking function in a thread
-                
+                result = await asyncio.to_thread(
+                    func, **params
+                )  # Run blocking function in a thread
+
             results.append(f"✅ {action}: {result}")
         except Exception as e:
             error_msg = f"⚠️ {action} error: {str(e)}"

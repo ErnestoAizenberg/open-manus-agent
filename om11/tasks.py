@@ -1,13 +1,15 @@
-import time
+import asyncio
+import os
 import random
 import re
-import os
-import asyncio
-from typing import Any, Dict, Optional, List
+import time
+from typing import Any, Dict, List, Optional
+
 
 class Tasks:
-    def __init__(self, browser_manager):
+    def __init__(self, browser_manager, captcha_service):
         self.browser = browser_manager
+        self.captcha_service = captcha_service
 
     # Non-browser tasks
     def sleep(self, seconds: float) -> str:
@@ -184,7 +186,9 @@ class Tasks:
 
         return {"status": "ok", "paths": lines}
 
-    async def run_multiple_sessions_from_file(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def run_multiple_sessions_from_file(
+        self, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         filepath = params.get("file")
         count = params.get("count", 1)
 
@@ -200,7 +204,9 @@ class Tasks:
 
         return {"status": "ok", "results": results}
 
-    async def setup_octo_session_from_folder(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def setup_octo_session_from_folder(
+        self, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         folder_path = params.get("folder_path")
         profile_index = params.get("profile_index", 0)
 
@@ -222,20 +228,22 @@ class Tasks:
     async def solve_best_captcha(self, params: Dict[str, Any]) -> Dict[str, Any]:
         user_id = params.get("user_id", "default")
 
-        if not can_use_captcha(user_id):
+        if not self.captcha_service.can_use_captcha(user_id):
             raise Exception("🚫 Превышен лимит капча-решений для пользователя")
 
-        api_keys = load_api_keys()
+        api_keys = self.captcha_service.load_api_keys()
         captcha_type = "capmonster"
 
         result = await self._solve_captcha(captcha_type, api_keys)
 
         if result:
-            increment_user_usage(user_id)
+            self.captcha_service.increment_user_usage(user_id)
 
         return {"status": "ok", "result": result}
 
-    async def _solve_captcha(self, captcha_type: Optional[str], api_keys: Dict[str, str]) -> bool:
+    async def _solve_captcha(
+        self, captcha_type: Optional[str], api_keys: Dict[str, str]
+    ) -> bool:
         if captcha_type is None:
             print("Капча не распознана.")
             return False
