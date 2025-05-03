@@ -9,6 +9,7 @@ from managers.config_manager import UserConfigManager
 from task_registry import register_tasks
 from tasks import Tasks
 
+
 logging.basicConfig(level=logging.INFO)
 headless = os.getenv("HEADLESS", "false").lower() == "true"
 CONFIG_DIR = "instance/user_configs"

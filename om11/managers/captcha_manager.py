@@ -1,757 +1,360 @@
 import asyncio
-import base64
-import logging
-import time
+import aiohttp
+from typing import Dict, Any, Optional, Tuple
 from enum import Enum
-from typing import Any, Dict, Optional, Union
+from dataclasses import dataclass
+from captchas import FunCaptcha, Turnstile, ReCaptchaV3, ReCaptchaV2, GeetestV4, GeetestV3, HCaptcha
 
-import requests
-from capmonstercloudclient import CapMonsterClient, ClientOptions
-from capmonstercloudclient.requests import (
-    HcaptchaRequest,
-    RecaptchaV2Request,
-    RecaptchaV3ProxylessRequest,
-)
-from python_anticaptcha import AnticaptchaClient
-from python_anticaptcha.tasks import (
-    HCaptchaTaskProxyless,
-    RecaptchaV2TaskProxyless,
-    RecaptchaV3TaskProxyless,
-)
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-
+# --- CAPTCHA TYPE DEFINITIONS ---
 class CaptchaType(Enum):
-    RECAPTCHA_V2 = "reCAPTCHA v2"
-    RECAPTCHA_V3 = "reCAPTCHA v3"
-    HCAPTCHA = "hCaptcha"
-    IMAGE_CAPTCHA = "ImageCaptcha"
-    TEXT_CAPTCHA = "TextCaptcha"
-    UNKNOWN = "Unknown"
+    RECAPTCHA_V2 = "recaptcha_v2"
+    RECAPTCHA_V3 = "recaptcha_v3"
+    HCAPTCHA = "hcaptcha"
+    GEETEST_V3 = "geetest_v3"
+    GEETEST_V4 = "geetest_v4"
+    TURNSTILE = "turnstile"
+    FUNCAPTCHA = "funcaptcha"
+    IMAGE_CAPTCHA = "image_captcha"
+    TEXT_CAPTCHA = "text_captcha"
 
 
+# --- CAPTCHA PROVIDER CONFIG ---
+CAPTCHA_PROVIDERS = {
+    CaptchaType.RECAPTCHA_V2: {
+        "main": "capmonster", 
+        "fallback": "anticaptcha"
+    },
+    CaptchaType.RECAPTCHA_V3: {
+        "main": "capmonster", 
+        "fallback": "capsolver"
+    },
+    CaptchaType.HCAPTCHA: {
+        "main": "capmonster", 
+        "fallback": "capsolver"
+    },
+    CaptchaType.FUNCAPTCHA: {
+        "main": "capsolver", 
+        "fallback": "anticaptcha"
+    },
+    CaptchaType.TURNSTILE: {
+        "main": "capsolver", 
+        "fallback": "anticaptcha"
+    },
+    CaptchaType.GEETEST_V3: {
+        "main": "capsolver", 
+        "fallback": "anticaptcha"
+    },
+    CaptchaType.GEETEST_V4: {
+        "main": "capsolver", 
+        "fallback": "anticaptcha"
+    },
+    CaptchaType.IMAGE_CAPTCHA: {
+        "main": "capmonster", 
+        "fallback": "anticaptcha"
+    },
+    CaptchaType.TEXT_CAPTCHA: {
+        "main": "capmonster", 
+        "fallback": "anticaptcha"
+    }
+}
+
+
+@dataclass
+class CaptchaSolution:
+    token: str
+    additional_data: Dict[str, Any] = None
+
+# --- MAIN SOLVER CLASS ---
 class CaptchaSolver:
-    def __init__(self):
-        self._page = None
-        self.solvers = {
-            "2captcha": self.solve_with_2captcha,
-            "anticaptcha": self.solve_with_anticaptcha,
-            "capmonster": self.solve_with_capmonster,
-            "rucaptcha": self.solve_with_rucaptcha,
+    """
+    Usage:
+    ```python
+    async with CaptchaSolver(page) as solver:
+    api_keys = {
+        "capmonster": "YOUR_CAPMONSTER_KEY",
+        "anticaptcha": "YOUR_ANTICAPTCHA_KEY",
+        "capsolver": "YOUR_CAPSOLVER_KEY"
+    }
+    await solver.solve(api_keys=api_keys)
+    """
+
+    def __init__(self, page):
+        self.page = page
+        self.session = aiohttp.ClientSession()
+        self._captcha_cache: Dict[str, Tuple[str, Dict]] = {}
+        self.captcha_classes = {
+            CaptchaType.RECAPTCHA_V2: ReCaptchaV2,
+            CaptchaType.RECAPTCHA_V3: ReCaptchaV3,
+            CaptchaType.HCAPTCHA: HCaptcha,
+            CaptchaType.TURNSTILE: Turnstile,
+            CaptchaType.FUNCAPTCHA: FunCaptcha,
+            CaptchaType.GEETEST_V3: GeetestV3,
+            CaptchaType.GEETEST_V4: GeetestV4
         }
+    
+    async def close(self):
+        await self.session.close()
+    
+    async def detect(self) -> Optional[Tuple[CaptchaType, Dict[str, Any]]]:
+        """Detect captcha and return type with parameters"""
+        url = await self.page.url()
+        cached_result = self._captcha_cache.get(url)
+        
+        if cached_result:
+            print(f"Используем кэш для {url}: {cached_result[0]}")
+            return cached_result
 
-    async def set_page(self, page):
-        """Set the current page for captcha solving."""
-        self._page = page
+        for captcha_type, captcha_class in self.captcha_classes.items():
+            if await self.page.evaluate(captcha_class.DETECT_SCRIPT):
+                params = await self.page.evaluate(captcha_class.DATA_SCRIPT)
+                self._captcha_cache[url] = (captcha_type, params)
+                print(f"Кэш обновлён для {url}: {captcha_type}")
+                return captcha_type, params
+        return None
+    
 
-    async def detect_captcha_type(self) -> CaptchaType:
-        """Detect the type of captcha on the current page."""
-        if not self._page:
-            raise Exception("Page not set. Call set_page() first.")
+    async def solve(self, service: str = "auto", api_key: str = None, api_keys: Dict[str, str] = None) -> bool:
+        detection_result = await self.detect()
+        if not detection_result:
+            return False #captcha not detected 
 
+        captcha_type, params = detection_result
+        supported_captcha_types = set(self.captcha_classes.keys())
+        if captcha_type not in supported_captcha_types:
+            raise ValueError(f"Detected captcha type '{captcha_type}' is not supported.")
+
+        # Determine main service if 'auto'
+        if service == "auto":
+            main_service = CAPTCHA_PROVIDERS[captcha_type]["main"]
+        else:
+            main_service = service
+
+        # Determine fallback service
+        fallback_service = CAPTCHA_PROVIDERS[captcha_type]["fallback"]
+
+        # Select API key for main and fallback
+        # Assuming `api_keys` dict contains keys for all services
+        main_api_key = None
+        fallback_api_key = None
+        if api_keys:
+            main_api_key = api_keys.get(main_service)
+            fallback_api_key = api_keys.get(fallback_service)
+        else:
+            main_api_key = api_key
+
+        # First attempt with main service
         try:
-            # Check for reCAPTCHA v2/v3
-            recaptcha_info = await self._page.evaluate(
-                """
-                () => {
-                    const recaptcha = document.querySelector('[data-sitekey]');
-                    if (recaptcha) {
-                        try {
-                            const version = grecaptcha && grecaptcha.getResponse 
-                                ? 'v2' 
-                                : 'v3';
-                            return {
-                                type: `reCAPTCHA ${version}`,
-                                sitekey: recaptcha.dataset.sitekey
-                            };
-                        } catch (e) {
-                            return {
-                                type: 'reCAPTCHA v2',
-                                sitekey: recaptcha.dataset.sitekey
-                            };
-                        }
-                    }
-                    return null;
-                }
-            """
-            )
 
-            if recaptcha_info:
-                return (
-                    (
-                        CaptchaType.RECAPTCHA_V2
-                        if "v2" in recaptcha_info["type"]
-                        else CaptchaType.RECAPTCHA_V3
-                    ),
-                    recaptcha_info["sitekey"],
-                )
-
-            # Check for hCaptcha
-            hcaptcha_info = await self._page.evaluate(
-                """
-                () => {
-                    const hcaptcha = document.querySelector('[data-hcaptcha]');
-                    if (hcaptcha) {
-                        return {
-                            type: 'hCaptcha',
-                            sitekey: hcaptcha.dataset.sitekey || 
-                                    document.querySelector('iframe[src*="hcaptcha"]')?.src?.match(/sitekey=([^&]+)/)?.[1]
-                        };
-                    }
-                    return null;
-                }
-            """
-            )
-
-            if hcaptcha_info:
-                return CaptchaType.HCAPTCHA, hcaptcha_info["sitekey"]
-
-            # Check for simple image captcha
-            image_captcha = await self._page.evaluate(
-                """
-                !!document.querySelector('img[src*="captcha"]')
-            """
-            )
-            if image_captcha:
-                return CaptchaType.IMAGE_CAPTCHA, None
-
-            # Check for text captcha
-            text_captcha = await self._page.evaluate(
-                """
-                !!document.querySelector('input[name*="captcha"]')
-            """
-            )
-            if text_captcha:
-                return CaptchaType.TEXT_CAPTCHA, None
-
-            return CaptchaType.UNKNOWN, None
+            solution = await self._solve_with_service(main_service, captcha_type, main_api_key, params)
         except Exception as e:
-            logger.error(f"Failed to detect captcha type: {str(e)}")
-            raise Exception(f"Failed to detect captcha type: {str(e)}")
+            # Log or handle the exception
+            print(f"Main service '{main_service}' failed: {e}")
+            # Try fallback service
+            try:
+                self._captcha_cache.clear()
 
-    async def solve_captcha(self, service: str, api_key: str, **kwargs) -> bool:
-        """
-        Solve captcha using specified service.
+                detection_result = await self.detect()
+                if not detection_result:
+                    return False #captcha not detected 
 
-        Args:
-            service: One of ['2captcha', 'anticaptcha', 'capmonster', 'rucaptcha']
-            api_key: API key for the captcha solving service
-            **kwargs: Additional parameters for specific captcha types
+                captcha_type, params = detection_result
 
-        Returns:
-            bool: True if captcha was solved successfully
-        """
-        if service not in self.solvers:
-            raise ValueError(f"Unsupported captcha service: {service}")
+                solution = await self._solve_with_service(fallback_service, captcha_type, fallback_api_key, params)
+            except Exception as fallback_e:
+                print(f"Fallback service '{fallback_service}' also failed: {fallback_e}")
+                raise  # re-raise the last exception
 
-        captcha_type, sitekey = await self.detect_captcha_type()
-        solver_func = self.solvers[service]
-
-        return await solver_func(api_key, captcha_type, sitekey, **kwargs)
-
-    async def solve_with_2captcha(
-        self,
-        api_key: str,
-        captcha_type: CaptchaType,
-        sitekey: Optional[str] = None,
-        **kwargs,
-    ) -> bool:
-        """Solve captcha using 2Captcha service."""
+        # Submit solution
+        captcha_class = self.captcha_classes[captcha_type]
+        await self.page.evaluate(captcha_class.SUBMIT_SCRIPT, solution.__dict__)
+        return True
+    
+    async def _solve_with_service(self, service: str, captcha_type: CaptchaType, 
+                                api_key: str, params: Dict[str, Any]) -> CaptchaSolution:
+        """Route to appropriate solver based on service"""
         try:
-            if captcha_type in [CaptchaType.RECAPTCHA_V2, CaptchaType.RECAPTCHA_V3]:
-                if not sitekey:
-                    raise Exception("No reCAPTCHA sitekey found on page")
-
-                solver = TwoCaptchaSolver(api_key)
-                page_url = self._page.url
-
-                if captcha_type == CaptchaType.RECAPTCHA_V2:
-                    result = await solver.solve_recaptcha_v2(
-                        sitekey, page_url, **kwargs
-                    )
-                    await self._page.evaluate(
-                        f"""
-                        document.querySelector('#g-recaptcha-response').value = '{result}';
-                    """
-                    )
-                else:  # RECAPTCHA_V3
-                    result = await solver.solve_recaptcha_v3(
-                        sitekey,
-                        page_url,
-                        kwargs.get("action", "verify"),
-                        kwargs.get("min_score", 0.5),
-                    )
-                    await self._page.evaluate(
-                        f"""
-                        document.querySelector('#g-recaptcha-response').value = '{result}';
-                    """
-                    )
-
-                return True
-
-            elif captcha_type == CaptchaType.HCAPTCHA:
-                if not sitekey:
-                    raise Exception("No hCaptcha sitekey found on page")
-
-                solver = TwoCaptchaSolver(api_key)
-                result = await solver.solve_hcaptcha(sitekey, self._page.url)
-
-                await self._page.evaluate(
-                    f"""
-                    document.querySelector('[name="h-captcha-response"]').value = '{result}';
-                """
-                )
-                return True
-
-            elif captcha_type == CaptchaType.IMAGE_CAPTCHA:
-                image_data = await self._page.evaluate(
-                    """
-                    () => {
-                        const img = document.querySelector('img[src*="captcha"]');
-                        if (!img) return null;
-                        
-                        // Create canvas to get image data
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
-                        return canvas.toDataURL('image/png');
-                    }
-                """
-                )
-
-                if not image_data:
-                    raise Exception("No image captcha found")
-
-                solver = TwoCaptchaSolver(api_key)
-                result = await solver.solve_image_captcha(image_data)
-
-                # Find the input field and set the solution
-                await self._page.evaluate(
-                    f"""
-                    () => {{
-                        const inputs = [
-                            ...document.querySelectorAll('input[name*="captcha"]'),
-                            ...document.querySelectorAll('input[name*="verification"]')
-                        ];
-                        if (inputs.length > 0) {{
-                            inputs[0].value = '{result}';
-                        }}
-                    }}
-                """
-                )
-                return True
-
+            if service == "capmonster":
+                return await self._solve_capmonster(captcha_type, api_key, params)
+            elif service == "anticaptcha":
+                return await self._solve_anticaptcha(captcha_type, api_key, params)
+            elif service == "capsolver":
+                return await self._solve_capsolver(captcha_type, api_key, params)
             else:
-                raise Exception(
-                    f"Unsupported captcha type for 2captcha: {captcha_type}"
-                )
-
+                raise ValueError(f"Unsupported service: {service}")
         except Exception as e:
-            logger.error(f"Failed to solve captcha with 2captcha: {str(e)}")
-            raise Exception(f"Failed to solve captcha with 2captcha: {str(e)}")
-
-    async def solve_with_anticaptcha(
-        self,
-        api_key: str,
-        captcha_type: CaptchaType,
-        sitekey: Optional[str] = None,
-        **kwargs,
-    ) -> bool:
-        """Solve captcha using Anti-Captcha service."""
-        try:
-            client = AnticaptchaClient(api_key)
-            page_url = self._page.url
-
-            if captcha_type == CaptchaType.RECAPTCHA_V2:
-                if not sitekey:
-                    raise Exception("No reCAPTCHA sitekey found on page")
-
-                task = RecaptchaV2TaskProxyless(
-                    website_url=page_url, website_key=sitekey, **kwargs
-                )
-                job = client.createTask(task)
-                solution = job.get_solution_response()
-
-                await self._page.evaluate(
-                    f"""
-                    document.querySelector('#g-recaptcha-response').value = '{solution['gRecaptchaResponse']}';
-                """
-                )
-                return True
-
-            elif captcha_type == CaptchaType.RECAPTCHA_V3:
-                if not sitekey:
-                    raise Exception("No reCAPTCHA sitekey found on page")
-
-                task = RecaptchaV3TaskProxyless(
-                    website_url=page_url,
-                    website_key=sitekey,
-                    min_score=kwargs.get("min_score", 0.5),
-                    page_action=kwargs.get("action", "verify"),
-                    **kwargs,
-                )
-                job = client.createTask(task)
-                solution = job.get_solution_response()
-
-                await self._page.evaluate(
-                    f"""
-                    document.querySelector('#g-recaptcha-response').value = '{solution['gRecaptchaResponse']}';
-                """
-                )
-                return True
-
-            elif captcha_type == CaptchaType.HCAPTCHA:
-                if not sitekey:
-                    raise Exception("No hCaptcha sitekey found on page")
-
-                task = HCaptchaTaskProxyless(
-                    website_url=page_url, website_key=sitekey, **kwargs
-                )
-                job = client.createTask(task)
-                solution = job.get_solution_response()
-
-                await self._page.evaluate(
-                    f"""
-                    document.querySelector('[name="h-captcha-response"]').value = '{solution['gRecaptchaResponse']}';
-                """
-                )
-                return True
-
-            elif captcha_type == CaptchaType.IMAGE_CAPTCHA:
-                image_data = await self._page.evaluate(
-                    """
-                    () => {
-                        const img = document.querySelector('img[src*="captcha"]');
-                        if (!img) return null;
-                        
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
-                        return canvas.toDataURL('image/png');
-                    }
-                """
-                )
-
-                if not image_data:
-                    raise Exception("No image captcha found")
-
-                # Implementation for image captcha with Anti-Captcha would go here
-                raise NotImplementedError(
-                    "Image captcha support for Anti-Captcha not implemented yet"
-                )
-
-            else:
-                raise Exception(
-                    f"Unsupported captcha type for Anti-Captcha: {captcha_type}"
-                )
-
-        except Exception as e:
-            logger.error(f"Failed to solve captcha with Anti-Captcha: {str(e)}")
-            raise Exception(f"Failed to solve captcha with Anti-Captcha: {str(e)}")
-
-    async def solve_with_capmonster(
-        self,
-        api_key: str,
-        captcha_type: CaptchaType,
-        sitekey: Optional[str] = None,
-        **kwargs,
-    ) -> bool:
-        """Solve captcha using CapMonster service."""
-        try:
-            client_options = ClientOptions(api_key=api_key)
-            client = CapMonsterClient(options=client_options)
-            page_url = self._page.url
-
-            if captcha_type == CaptchaType.RECAPTCHA_V2:
-                if not sitekey:
-                    raise Exception("No reCAPTCHA sitekey found on page")
-
-                request = RecaptchaV2Request(
-                    websiteUrl=page_url, websiteKey=sitekey, **kwargs
-                )
-                solution = await client.solve_captcha(request)
-
-                await self._page.evaluate(
-                    f"""
-                    document.querySelector('#g-recaptcha-response').value = '{solution['gRecaptchaResponse']}';
-                """
-                )
-                return True
-
-            elif captcha_type == CaptchaType.RECAPTCHA_V3:
-                if not sitekey:
-                    raise Exception("No reCAPTCHA sitekey found on page")
-
-                request = RecaptchaV3ProxylessRequest(
-                    websiteUrl=page_url,
-                    websiteKey=sitekey,
-                    minScore=kwargs.get("min_score", 0.5),
-                    pageAction=kwargs.get("action", "verify"),
-                    **kwargs,
-                )
-                solution = await client.solve_captcha(request)
-
-                await self._page.evaluate(
-                    f"""
-                    document.querySelector('#g-recaptcha-response').value = '{solution['gRecaptchaResponse']}';
-                """
-                )
-                return True
-
-            elif captcha_type == CaptchaType.HCAPTCHA:
-                if not sitekey:
-                    raise Exception("No hCaptcha sitekey found on page")
-
-                request = HcaptchaRequest(
-                    websiteUrl=page_url, websiteKey=sitekey, **kwargs
-                )
-                solution = await client.solve_captcha(request)
-
-                await self._page.evaluate(
-                    f"""
-                    document.querySelector('[name="h-captcha-response"]').value = '{solution['token']}';
-                """
-                )
-                return True
-
-            elif captcha_type == CaptchaType.IMAGE_CAPTCHA:
-                # Implementation for image captcha with CapMonster would go here
-                raise NotImplementedError(
-                    "Image captcha support for CapMonster not implemented yet"
-                )
-
-            else:
-                raise Exception(
-                    f"Unsupported captcha type for CapMonster: {captcha_type}"
-                )
-
-        except Exception as e:
-            logger.error(f"Failed to solve captcha with CapMonster: {str(e)}")
-            raise Exception(f"Failed to solve captcha with CapMonster: {str(e)}")
-
-    async def solve_with_rucaptcha(
-        self,
-        api_key: str,
-        captcha_type: CaptchaType,
-        sitekey: Optional[str] = None,
-        **kwargs,
-    ) -> bool:
-        """Solve captcha using RuCaptcha service."""
-        try:
-            if captcha_type == CaptchaType.IMAGE_CAPTCHA:
-                image_data = await self._page.evaluate(
-                    """
-                    () => {
-                        const img = document.querySelector('img[src*="captcha"]');
-                        if (!img) return null;
-                        
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
-                        return canvas.toDataURL('image/png').split(',')[1];
-                    }
-                """
-                )
-
-                if not image_data:
-                    raise Exception("No image captcha found")
-
-                connection = RuCaptchaConnection(api_key)
-                captcha = connection.send(("captcha.png", base64.b64decode(image_data)))
-                solution = captcha.wait_decision()
-
-                # Find the input field and set the solution
-                await self._page.evaluate(
-                    f"""
-                    () => {{
-                        const inputs = [
-                            ...document.querySelectorAll('input[name*="captcha"]'),
-                            ...document.querySelectorAll('input[name*="verification"]')
-                        ];
-                        if (inputs.length > 0) {{
-                            inputs[0].value = '{solution}';
-                        }}
-                    }}
-                """
-                )
-                return True
-
-            elif captcha_type in [CaptchaType.RECAPTCHA_V2, CaptchaType.RECAPTCHA_V3]:
-                if not sitekey:
-                    raise Exception("No reCAPTCHA sitekey found on page")
-
-                solver = RuCaptchaSolver(api_key)
-                result = await solver.solve_recaptcha(
-                    sitekey,
-                    self._page.url,
-                    is_v3=(captcha_type == CaptchaType.RECAPTCHA_V3),
-                    **kwargs,
-                )
-
-                await self._page.evaluate(
-                    f"""
-                    document.querySelector('#g-recaptcha-response').value = '{result}';
-                """
-                )
-                return True
-
-            elif captcha_type == CaptchaType.HCAPTCHA:
-                if not sitekey:
-                    raise Exception("No hCaptcha sitekey found on page")
-
-                solver = RuCaptchaSolver(api_key)
-                result = await solver.solve_hcaptcha(sitekey, self._page.url)
-
-                await self._page.evaluate(
-                    f"""
-                    document.querySelector('[name="h-captcha-response"]').value = '{result}';
-                """
-                )
-                return True
-
-            else:
-                raise Exception(
-                    f"Unsupported captcha type for RuCaptcha: {captcha_type}"
-                )
-
-        except Exception as e:
-            logger.error(f"Failed to solve captcha with RuCaptcha: {str(e)}")
-            raise Exception(f"Failed to solve captcha with RuCaptcha: {str(e)}")
-
-
-class TwoCaptchaSolver:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.base_url = "http://2captcha.com"
-        self.session = requests.Session()
-
-    async def solve_recaptcha_v2(self, sitekey: str, pageurl: str, **kwargs) -> str:
-        params = {
-            "key": self.api_key,
-            "method": "userrecaptcha",
-            "googlekey": sitekey,
-            "pageurl": pageurl,
-            "json": 1,
-            **kwargs,
+            fallback_service = CAPTCHA_PROVIDERS[captcha_type]["fallback"]
+            if fallback_service != service:
+                return await self._solve_with_service(fallback_service, captcha_type, api_key, params)
+            raise
+    
+    # --- SERVICE IMPLEMENTATIONS ---
+    async def _solve_capmonster(self, captcha_type: CaptchaType, 
+                              api_key: str, params: Dict[str, Any]) -> CaptchaSolution:
+        """CapMonster Cloud API implementation"""
+        url = "https://api.capmonster.cloud/createTask"
+        data = {
+            "clientKey": api_key,
+            "task": {
+                "websiteURL": params["url"],
+                "type": self._get_capmonster_task_type(captcha_type)
+            }
         }
-
-        # Submit captcha
-        submit_resp = self.session.post(f"{self.base_url}/in.php", data=params)
-        submit_data = submit_resp.json()
-
-        if submit_data.get("status") != 1:
-            raise Exception(f"Failed to submit captcha: {submit_data.get('request')}")
-
-        captcha_id = submit_data.get("request")
-
-        # Wait for solution
-        for _ in range(40):  # 40 attempts with 5 second delay = ~200 seconds timeout
-            time.sleep(5)
-            result_resp = self.session.get(
-                f"{self.base_url}/res.php",
-                params={
-                    "key": self.api_key,
-                    "action": "get",
-                    "id": captcha_id,
-                    "json": 1,
-                },
+        
+        # Add type-specific parameters
+        if captcha_type == CaptchaType.RECAPTCHA_V2:
+            data["task"]["websiteKey"] = params["sitekey"]
+        elif captcha_type == CaptchaType.RECAPTCHA_V3:
+            data["task"]["websiteKey"] = params["sitekey"]
+            data["task"]["minScore"] = 0.5
+            data["task"]["pageAction"] = params.get("action", "verify")
+        elif captcha_type == CaptchaType.HCAPTCHA:
+            data["task"]["websiteKey"] = params["sitekey"]
+        elif captcha_type == CaptchaType.TURNSTILE:
+            data["task"]["websiteKey"] = params["sitekey"]
+            data["task"]["action"] = params.get("action", "default")
+        elif captcha_type == CaptchaType.FUNCAPTCHA:
+            data["task"]["websitePublicKey"] = params["public_key"]
+        elif captcha_type == CaptchaType.GEETEST_V3:
+            data["task"]["gt"] = params["gt"]
+            data["task"]["challenge"] = params["challenge"]
+        elif captcha_type == CaptchaType.GEETEST_V4:
+            data["task"]["gt"] = params["captcha_id"]
+            data["task"]["version"] = 4
+        
+        async with self.session.post(url, json=data) as resp:
+            result = await resp.json()
+            if result.get("errorId", 0) > 0:
+                raise RuntimeError(f"CapMonster error: {result.get('errorDescription', 'Unknown error')}")
+            task_id = result["taskId"]
+        
+        return await self._poll_capmonster(api_key, task_id)
+    
+    async def _poll_capmonster(self, api_key: str, task_id: str, timeout: int = 120) -> CaptchaSolution:
+        """Poll CapMonster for solution"""
+        url = "https://api.capmonster.cloud/getTaskResult"
+        for _ in range(timeout // 5):
+            await asyncio.sleep(5)
+            async with self.session.post(url, json={"clientKey": api_key, "taskId": task_id}) as resp:
+                result = await resp.json()
+                if result["status"] == "ready":
+                    return CaptchaSolution(token=result["solution"]["gRecaptchaResponse"])
+                elif result["status"] == "failed":
+                    raise RuntimeError("CapMonster task failed")
+        raise TimeoutError("CapMonster timeout")
+    
+    async def _solve_anticaptcha(self, captcha_type: CaptchaType, 
+                               api_key: str, params: Dict[str, Any]) -> CaptchaSolution:
+        """Anti-Captcha API implementation"""
+        from python_anticaptcha import AnticaptchaClient
+        from python_anticaptcha.tasks import (
+            RecaptchaV2TaskProxyless,
+            RecaptchaV3TaskProxyless,
+            HCaptchaTaskProxyless,
+            FunCaptchaTaskProxyless,
+            GeeTestTaskProxyless
+        )
+        
+        client = AnticaptchaClient(api_key)
+        
+        if captcha_type == CaptchaType.RECAPTCHA_V2:
+            task = RecaptchaV2TaskProxyless(
+                website_url=params["url"],
+                website_key=params["sitekey"]
             )
-            result_data = result_resp.json()
-
-            if result_data.get("status") == 1:
-                return result_data.get("request")
-            elif result_data.get("request") != "CAPCHA_NOT_READY":
-                raise Exception(
-                    f"Failed to solve captcha: {result_data.get('request')}"
-                )
-
-        raise Exception("Timeout while waiting for captcha solution")
-
-    async def solve_recaptcha_v3(
-        self,
-        sitekey: str,
-        pageurl: str,
-        action: str = "verify",
-        min_score: float = 0.5,
-        **kwargs,
-    ) -> str:
-        params = {
-            "key": self.api_key,
-            "method": "userrecaptcha",
-            "version": "v3",
-            "googlekey": sitekey,
-            "pageurl": pageurl,
-            "action": action,
-            "min_score": min_score,
-            "json": 1,
-            **kwargs,
-        }
-
-        return await self._solve_captcha(params)
-
-    async def solve_hcaptcha(self, sitekey: str, pageurl: str, **kwargs) -> str:
-        params = {
-            "key": self.api_key,
-            "method": "hcaptcha",
-            "sitekey": sitekey,
-            "pageurl": pageurl,
-            "json": 1,
-            **kwargs,
-        }
-
-        return await self._solve_captcha(params)
-
-    async def solve_image_captcha(self, image_data: str, **kwargs) -> str:
-        params = {
-            "key": self.api_key,
-            "method": "base64",
-            "body": image_data,
-            "json": 1,
-            **kwargs,
-        }
-
-        return await self._solve_captcha(params)
-
-    async def _solve_captcha(self, params: Dict[str, Any]) -> str:
-        """Generic method to solve captcha with 2captcha."""
-        # Submit captcha
-        submit_resp = self.session.post(f"{self.base_url}/in.php", data=params)
-        submit_data = submit_resp.json()
-
-        if submit_data.get("status") != 1:
-            raise Exception(f"Failed to submit captcha: {submit_data.get('request')}")
-
-        captcha_id = submit_data.get("request")
-
-        # Wait for solution
-        for _ in range(40):  # 40 attempts with 5 second delay = ~200 seconds timeout
-            time.sleep(5)
-            result_resp = self.session.get(
-                f"{self.base_url}/res.php",
-                params={
-                    "key": self.api_key,
-                    "action": "get",
-                    "id": captcha_id,
-                    "json": 1,
-                },
+        elif captcha_type == CaptchaType.RECAPTCHA_V3:
+            task = RecaptchaV3TaskProxyless(
+                website_url=params["url"],
+                website_key=params["sitekey"],
+                min_score=0.5,
+                page_action=params.get("action", "verify")
             )
-            result_data = result_resp.json()
-
-            if result_data.get("status") == 1:
-                return result_data.get("request")
-            elif result_data.get("request") != "CAPCHA_NOT_READY":
-                raise Exception(
-                    f"Failed to solve captcha: {result_data.get('request')}"
-                )
-
-        raise Exception("Timeout while waiting for captcha solution")
-
-
-class RuCaptchaSolver:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.base_url = "https://rucaptcha.com"
-        self.session = requests.Session()
-
-    async def solve_recaptcha(
-        self,
-        sitekey: str,
-        pageurl: str,
-        is_v3: bool = False,
-        action: str = "verify",
-        min_score: float = 0.5,
-        **kwargs,
-    ) -> str:
-        params = {
-            "key": self.api_key,
-            "method": "userrecaptcha",
-            "googlekey": sitekey,
-            "pageurl": pageurl,
-            "json": 1,
-            **kwargs,
-        }
-
-        if is_v3:
-            params.update({"version": "v3", "action": action, "min_score": min_score})
-
-        # Submit captcha
-        submit_resp = self.session.post(f"{self.base_url}/in.php", data=params)
-        submit_data = submit_resp.json()
-
-        if submit_data.get("status") != 1:
-            raise Exception(f"Failed to submit captcha: {submit_data.get('request')}")
-
-        captcha_id = submit_data.get("request")
-
-        # Wait for solution
-        for _ in range(40):  # 40 attempts with 5 second delay = ~200 seconds timeout
-            time.sleep(5)
-            result_resp = self.session.get(
-                f"{self.base_url}/res.php",
-                params={
-                    "key": self.api_key,
-                    "action": "get",
-                    "id": captcha_id,
-                    "json": 1,
-                },
+        elif captcha_type == CaptchaType.HCAPTCHA:
+            task = HCaptchaTaskProxyless(
+                website_url=params["url"],
+                website_key=params["sitekey"]
             )
-            result_data = result_resp.json()
-
-            if result_data.get("status") == 1:
-                return result_data.get("request")
-            elif result_data.get("request") != "CAPCHA_NOT_READY":
-                raise Exception(
-                    f"Failed to solve captcha: {result_data.get('request')}"
-                )
-
-        raise Exception("Timeout while waiting for captcha solution")
-
-    async def solve_hcaptcha(self, sitekey: str, pageurl: str, **kwargs) -> str:
-        params = {
-            "key": self.api_key,
-            "method": "hcaptcha",
-            "sitekey": sitekey,
-            "pageurl": pageurl,
-            "json": 1,
-            **kwargs,
-        }
-
-        # Submit captcha
-        submit_resp = self.session.post(f"{self.base_url}/in.php", data=params)
-        submit_data = submit_resp.json()
-
-        if submit_data.get("status") != 1:
-            raise Exception(f"Failed to submit captcha: {submit_data.get('request')}")
-
-        captcha_id = submit_data.get("request")
-
-        # Wait for solution
-        for _ in range(40):  # 40 attempts with 5 second delay = ~200 seconds timeout
-            time.sleep(5)
-            result_resp = self.session.get(
-                f"{self.base_url}/res.php",
-                params={
-                    "key": self.api_key,
-                    "action": "get",
-                    "id": captcha_id,
-                    "json": 1,
-                },
+        elif captcha_type == CaptchaType.FUNCAPTCHA:
+            task = FunCaptchaTaskProxyless(
+                website_url=params["url"],
+                website_public_key=params["public_key"]
             )
-            result_data = result_resp.json()
+        elif captcha_type in (CaptchaType.GEETEST_V3, CaptchaType.GEETEST_V4):
+            task = GeeTestTaskProxyless(
+                website_url=params["url"],
+                gt=params["gt"] if captcha_type == CaptchaType.GEETEST_V3 else params["captcha_id"],
+                challenge=params.get("challenge", ""),
+                geetest_api_server=params.get("api_server", "")
+            )
+        else:
+            raise ValueError(f"Unsupported captcha type for Anti-Captcha: {captcha_type}")
+        
+        job = client.createTask(task)
+        solution = job.get_solution_response()
+        return CaptchaSolution(token=solution["gRecaptchaResponse"])
+    
+    async def _solve_capsolver(self, captcha_type: CaptchaType, 
+                             api_key: str, params: Dict[str, Any]) -> CaptchaSolution:
+        """CapSolver API implementation"""
+        from python3_capsolver import ReCaptcha, HCaptcha, FunCaptcha, GeeTest
+        
+        if captcha_type == CaptchaType.RECAPTCHA_V2:
+            solver = ReCaptcha(api_key=api_key)
+            solution = await solver.aio_captcha_handler(
+                websiteURL=params["url"],
+                websiteKey=params["sitekey"]
+            )
+        elif captcha_type == CaptchaType.RECAPTCHA_V3:
+            solver = ReCaptcha(api_key=api_key)
+            solution = await solver.aio_captcha_handler(
+                websiteURL=params["url"],
+                websiteKey=params["sitekey"],
+                version="v3",
+                minScore=0.5,
+                pageAction=params.get("action", "verify")
+            )
+        elif captcha_type == CaptchaType.HCAPTCHA:
+            solver = HCaptcha(api_key=api_key)
+            solution = await solver.aio_captcha_handler(
+                websiteURL=params["url"],
+                websiteKey=params["sitekey"]
+            )
+        elif captcha_type == CaptchaType.FUNCAPTCHA:
+            solver = FunCaptcha(api_key=api_key)
+            solution = await solver.aio_captcha_handler(
+                websiteURL=params["url"],
+                websitePublicKey=params["public_key"]
+            )
+        elif captcha_type in (CaptchaType.GEETEST_V3, CaptchaType.GEETEST_V4):
+            solver = GeeTest(api_key=api_key)
+            solution = await solver.aio_captcha_handler(
+                websiteURL=params["url"],
+                gt=params["gt"] if captcha_type == CaptchaType.GEETEST_V3 else params["captcha_id"],
+                challenge=params.get("challenge", ""),
+                version="4" if captcha_type == CaptchaType.GEETEST_V4 else "3"
+            )
+        else:
+            raise ValueError(f"Unsupported captcha type for CapSolver: {captcha_type}")
+        
+        return CaptchaSolution(
+            token=solution["gRecaptchaResponse"] if "gRecaptchaResponse" in solution else solution["token"],
+            additional_data=solution
+        )
+    
+    def _get_capmonster_task_type(self, captcha_type: CaptchaType) -> str:
+        """Map captcha type to CapMonster task type"""
+        mapping = {
+            CaptchaType.RECAPTCHA_V2: "RecaptchaV2TaskProxyless",
+            CaptchaType.RECAPTCHA_V3: "RecaptchaV3TaskProxyless",
+            CaptchaType.HCAPTCHA: "HCaptchaTaskProxyless",
+            CaptchaType.TURNSTILE: "TurnstileTaskProxyless",
+            CaptchaType.FUNCAPTCHA: "FunCaptchaTaskProxyless",
+            CaptchaType.GEETEST_V3: "GeeTestTaskProxyless",
+            CaptchaType.GEETEST_V4: "GeeTestTaskProxyless"
+        }
+        return mapping.get(captcha_type, "NoCaptchaTaskProxyless")
 
-            if result_data.get("status") == 1:
-                return result_data.get("request")
-            elif result_data.get("request") != "CAPCHA_NOT_READY":
-                raise Exception(
-                    f"Failed to solve captcha: {result_data.get('request')}"
-                )
-
-        raise Exception("Timeout while waiting for captcha solution")
+    async def __aenter__(self):
+        return self
+    
+    async def __aexit__(self, exc_type, exc, tb):
+        await self.close()

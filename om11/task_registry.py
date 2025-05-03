@@ -46,10 +46,5 @@ def register_tasks(tasks):
         "run_multiple_sessions_from_file": tasks.run_multiple_sessions_from_file,
         "setup_octo_session_from_folder": tasks.setup_octo_session_from_folder,
         "solve_best_captcha": tasks.solve_best_captcha,
-        "solve_captcha_2captcha": tasks.solve_captcha_2captcha,
-        "solve_captcha_anticaptcha": tasks.solve_captcha_anticaptcha,
-        "solve_captcha_capmonster": tasks.solve_captcha_capmonster,
-        "solve_captcha_rucaptcha": tasks.solve_captcha_rucaptcha,
-        "type_slow": tasks.type_slow,
     }
     return task_registry

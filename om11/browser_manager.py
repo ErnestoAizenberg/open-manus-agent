@@ -2,18 +2,17 @@ import asyncio
 import json
 import os
 from typing import Any, Dict, List, Optional
-
-from managers.captcha_manager import CaptchaSolver
 from pyppeteer import launch
 from pyppeteer.errors import PageError, TimeoutError
 
+from managers.captcha_manager import CaptchaSolver
 
 class BrowserManager:
     def __init__(self):
         self._browser = None
         self._page = None
         self._event_loop = None
-        self._captcha_solver = CaptchaSolver()
+        self_captcha_solver = CaptchaSolver(self._page)
 
     async def init_browser(
         self,
@@ -394,28 +393,6 @@ class BrowserManager:
             print(f"An unexpected error occurred: {e}")
             return False
 
-    async def solve_captcha_2captcha(self, api_key: str, **kwargs) -> bool:
-        """Solve captcha using 2captcha service."""
-        return await self._captcha_solver.solve_captcha("2captcha", api_key, **kwargs)
-
-    async def solve_captcha_capmonster(self, api_key: str, **kwargs) -> bool:
-        """Solve captcha using CapMonster service."""
-        return await self._captcha_solver.solve_captcha("capmonster", api_key, **kwargs)
-
-    async def solve_captcha_anticaptcha(self, api_key: str, **kwargs) -> bool:
-        """Solve captcha using AntiCaptcha service."""
-        return await self._captcha_solver.solve_captcha(
-            "anticaptcha", api_key, **kwargs
-        )
-
-    async def solve_captcha_rucaptcha(self, api_key: str, **kwargs) -> bool:
-        """Solve captcha using RuCaptcha service."""
-        return await self._captcha_solver.solve_captcha("rucaptcha", api_key, **kwargs)
-
-    async def detect_captcha_type(self) -> tuple:
-        """Detect the type of captcha on the page."""
-        captcha_type, sitekey = await self._captcha_solver.detect_captcha_type()
-        return captcha_type.value, sitekey
 
     @property
     def page(self):

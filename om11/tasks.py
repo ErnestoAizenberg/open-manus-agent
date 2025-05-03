@@ -5,7 +5,6 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
-
 class Tasks:
     def __init__(self, browser_manager, captcha_service):
         self.browser = browser_manager
@@ -224,59 +223,22 @@ class Tasks:
 
         return {"status": "ok", "folder": folder_path, "profile": profile_index + 1}
 
-    # Captcha solving tasks
+            
     async def solve_best_captcha(self, params: Dict[str, Any]) -> Dict[str, Any]:
         user_id = params.get("user_id", "default")
 
+        # Check if the user can use captcha service
         if not self.captcha_service.can_use_captcha(user_id):
-            raise Exception("🚫 Превышен лимит капча-решений для пользователя")
-
+            raise ValueError("🚫 Превышен лимит капча-решений для пользователя")
+  
         api_keys = self.captcha_service.load_api_keys()
-        captcha_type = "capmonster"
+        from managers.captcha_manager import CaptchaSolver
 
-        result = await self._solve_captcha(captcha_type, api_keys)
-
-        if result:
-            self.captcha_service.increment_user_usage(user_id)
-
-        return {"status": "ok", "result": result}
-
-    async def _solve_captcha(
-        self, captcha_type: Optional[str], api_keys: Dict[str, str]
-    ) -> bool:
-        if captcha_type is None:
-            print("Капча не распознана.")
-            return False
-
-        solver_map = {
-            "2captcha": self.browser.solve_captcha_2captcha,
-            "capmonster": self.browser.solve_captcha_capmonster,
-            "anticaptcha": self.browser.solve_captcha_anticaptcha,
-            "rucaptcha": self.browser.solve_captcha_rucaptcha,
-        }
-
-        solver = solver_map.get(captcha_type)
-        if solver is None:
-            print(f"Неизвестный тип капчи: {captcha_type}.")
-            return False
-
-        api_key = api_keys.get(captcha_type)
-        if api_key:
-            return await solver(api_key)
-        return False
-
-    async def solve_captcha_2captcha(self, api_key: str) -> str:
-        await self.browser.solve_captcha_2captcha(api_key)
-        return "Капча решена через 2Captcha"
-
-    async def solve_captcha_anticaptcha(self, api_key: str) -> str:
-        await self.browser.solve_captcha_anticaptcha(api_key)
-        return "Капча решена через Anti-Captcha"
-
-    async def solve_captcha_capmonster(self, api_key: str) -> str:
-        await self.browser.solve_captcha_capmonster(api_key)
-        return "Капча решена через CapMonster"
-
-    async def solve_captcha_rucaptcha(self, api_key: str) -> str:
-        await self.browser.solve_captcha_rucaptcha(api_key)
-        return "Капча решена через RuCaptcha"
+        async with CaptchaSolver(self.browser.page) as solver:
+            status = await solver.solve(api_keys=api_keys)
+            if status:
+                self.captcha_service.increment_user_usage(user_id)
+                return {"status": "ok", "result": status}
+            else:
+                return {"status": "error", "result": None}    
+                               
