@@ -95,7 +95,7 @@ class CaptchaSolver:
     async def close(self):
         await self.session.close()
     
-    async def detect(self) -> Optional[Tuple[CaptchaType, Dict[str, Any]]]:
+    async def detect(self) -> Optional[Tuple[str, Dict[str, Any]]]:
         """Detect captcha and return type with parameters"""
         url = await self.page.url()
         cached_result = self._captcha_cache.get(url)
@@ -144,8 +144,10 @@ class CaptchaSolver:
 
         # First attempt with main service
         try:
-
-            solution = await self._solve_with_service(main_service, captcha_type, main_api_key, params)
+            if main_api_key:
+                solution = await self._solve_with_service(main_service, captcha_type, main_api_key, params)
+            else:
+                raise ValueError(f"Invalid api key for service {main_service}.")
         except Exception as e:
             # Log or handle the exception
             print(f"Main service '{main_service}' failed: {e}")
@@ -158,8 +160,10 @@ class CaptchaSolver:
                     return False #captcha not detected 
 
                 captcha_type, params = detection_result
-
-                solution = await self._solve_with_service(fallback_service, captcha_type, fallback_api_key, params)
+                if fallback_api_key:
+                    solution = await self._solve_with_service(fallback_service, captcha_type, fallback_api_key, params)
+                else:
+                    raise ValueError("Invalid api key for service {fallback_service}")
             except Exception as fallback_e:
                 print(f"Fallback service '{fallback_service}' also failed: {fallback_e}")
                 raise  # re-raise the last exception
@@ -191,8 +195,8 @@ class CaptchaSolver:
     async def _solve_capmonster(self, captcha_type: CaptchaType, 
                               api_key: str, params: Dict[str, Any]) -> CaptchaSolution:
         """CapMonster Cloud API implementation"""
-        url = "https://api.capmonster.cloud/createTask"
-        data = {
+        url: str  = "https://api.capmonster.cloud/createTask"
+        data: Dict[str, Any]  = {
             "clientKey": api_key,
             "task": {
                 "websiteURL": params["url"],
@@ -202,23 +206,31 @@ class CaptchaSolver:
         
         # Add type-specific parameters
         if captcha_type == CaptchaType.RECAPTCHA_V2:
-            data["task"]["websiteKey"] = params["sitekey"]
+            sitekey: str = params["sitekey"]
+            data["task"]["websiteKey"] = sitekey
         elif captcha_type == CaptchaType.RECAPTCHA_V3:
-            data["task"]["websiteKey"] = params["sitekey"]
+            sitekey: str = params["sitekey"]
+            data["task"]["websiteKey"] = sitekey
             data["task"]["minScore"] = 0.5
-            data["task"]["pageAction"] = params.get("action", "verify")
+            data["task"]["pageAction"]: str = params.get("action", "verify")
         elif captcha_type == CaptchaType.HCAPTCHA:
-            data["task"]["websiteKey"] = params["sitekey"]
+            sitekey: str = params["sitekey"]
+            data["task"]["websiteKey"] = sitekey
         elif captcha_type == CaptchaType.TURNSTILE:
-            data["task"]["websiteKey"] = params["sitekey"]
-            data["task"]["action"] = params.get("action", "default")
+            sitekey: str = params["sitekey"]
+            data["task"]["websiteKey"] = sitekey
+            data["task"]["action"]: str = params.get("action", "default")
         elif captcha_type == CaptchaType.FUNCAPTCHA:
-            data["task"]["websitePublicKey"] = params["public_key"]
+            data["task"]["websitePublicKey"]: str = params["public_key"]
         elif captcha_type == CaptchaType.GEETEST_V3:
-            data["task"]["gt"] = params["gt"]
-            data["task"]["challenge"] = params["challenge"]
+            gt: str = params["gt"]
+            challenge: str = params["challenge"]
+            data["task"]["gt"] = gt
+
+            data["task"]["challenge"] = challange
         elif captcha_type == CaptchaType.GEETEST_V4:
-            data["task"]["gt"] = params["captcha_id"]
+            captcha_id: str = params["captcha_id"]
+            data["task"]["gt"] = captcha_id
             data["task"]["version"] = 4
         
         async with self.session.post(url, json=data) as resp:
