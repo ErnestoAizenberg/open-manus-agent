@@ -5,6 +5,7 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
+
 class Tasks:
     def __init__(self, browser_manager, captcha_service):
         self.browser = browser_manager
@@ -223,14 +224,13 @@ class Tasks:
 
         return {"status": "ok", "folder": folder_path, "profile": profile_index + 1}
 
-            
     async def solve_best_captcha(self, params: Dict[str, Any]) -> Dict[str, Any]:
         user_id = params.get("user_id", "default")
 
         # Check if the user can use captcha service
         if not self.captcha_service.can_use_captcha(user_id):
             raise ValueError("🚫 Превышен лимит капча-решений для пользователя")
-  
+
         api_keys = self.captcha_service.load_api_keys()
         from managers.captcha_manager import CaptchaSolver
 
@@ -240,5 +240,4 @@ class Tasks:
                 self.captcha_service.increment_user_usage(user_id)
                 return {"status": "ok", "result": status}
             else:
-                return {"status": "error", "result": None}    
-                               
+                return {"status": "error", "result": None}

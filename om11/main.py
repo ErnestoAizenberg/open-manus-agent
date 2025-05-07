@@ -13,20 +13,21 @@ from tasks import Tasks
 logging.basicConfig(level=logging.INFO)
 headless = os.getenv("HEADLESS", "false").lower() == "true"
 CONFIG_DIR = "instance/user_configs"
-config_manager = UserConfigManager(config_dir=CONFIG_DIR)
-captcha_service = CaptchaService(
-    config_manager=config_manager,
-    config=CaptchaConfig(),
-)
-browser_manager = BrowserManager()
-tasks = Tasks(
-    browser_manager=browser_manager,
-    captcha_service=captcha_service,
-)
-task_registry = register_tasks(tasks)
-
 
 async def main():
+    config_manager = UserConfigManager(config_dir=CONFIG_DIR)
+    captcha_service = CaptchaService(
+        config_manager=config_manager,
+        config=CaptchaConfig(),
+    )
+    browser_manager = BrowserManager()
+    tasks = Tasks(
+        browser_manager=browser_manager,
+        captcha_service=captcha_service,
+    )
+    task_registry = register_tasks(tasks)
+
+
     try:
         await browser_manager.init_browser(headless=headless)
         while True:

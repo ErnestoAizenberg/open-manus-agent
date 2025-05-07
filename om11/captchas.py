@@ -10,12 +10,12 @@ class ReCaptchaV2:
         }
         return null;
     }"""
-    
+
     DATA_SCRIPT = """() => ({
         sitekey: document.querySelector('[data-sitekey]').dataset.sitekey,
         url: location.href
     })"""
-    
+
     SUBMIT_SCRIPT = """(token) => {
         document.querySelector('#g-recaptcha-response').value = token;
     }"""
@@ -26,13 +26,13 @@ class ReCaptchaV3:
         return document.querySelector('[data-sitekey]') && 
                !document.querySelector('[data-size]') ? 'v3' : null;
     }"""
-    
+
     DATA_SCRIPT = """() => ({
         sitekey: document.querySelector('[data-sitekey]').dataset.sitekey,
         action: document.querySelector('[data-action]')?.dataset.action || 'verify',
         url: location.href
     })"""
-    
+
     SUBMIT_SCRIPT = """(token) => {
         document.querySelector('#g-recaptcha-response').value = token;
     }"""
@@ -40,13 +40,13 @@ class ReCaptchaV3:
 
 class HCaptcha:
     DETECT_SCRIPT = """() => document.querySelector('[data-hcaptcha]')"""
-    
+
     DATA_SCRIPT = """() => ({
         sitekey: document.querySelector('[data-hcaptcha]').dataset.sitekey || 
                 document.querySelector('iframe[src*="hcaptcha"]')?.src?.match(/sitekey=([^&]+)/)?.[1],
         url: location.href
     })"""
-    
+
     SUBMIT_SCRIPT = """(token) => {
         document.querySelector('[name="h-captcha-response"]').value = token;
     }"""
@@ -63,6 +63,7 @@ class GeetestV3:
         document.querySelector('#g-recaptcha-response').value = s.token;
         if (window.callGeetest) window.callGeetest(s);
     }"""
+
 
 class GeetestV4:
     DETECT_SCRIPT = """() => !!window.initGeetestV4"""
@@ -84,8 +85,11 @@ class Turnstile:
         document.querySelector('[name="cf-turnstile-response"]').value = token;
     }"""
 
+
 class FunCaptcha:
-    DETECT_SCRIPT = """() => window.funcaptcha || document.querySelector('#FunCaptcha')"""
+    DETECT_SCRIPT = (
+        """() => window.funcaptcha || document.querySelector('#FunCaptcha')"""
+    )
     DATA_SCRIPT = """() => ({
         public_key: window.funcaptchaOptions?.publicKey || 
                   document.querySelector('[data-pkey]')?.dataset.pkey,

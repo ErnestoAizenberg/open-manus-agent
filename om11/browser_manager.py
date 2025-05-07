@@ -7,15 +7,16 @@ from pyppeteer.errors import PageError, TimeoutError
 
 from managers.captcha_manager import CaptchaSolver
 
+
 class BrowserManager:
     def __init__(self):
         self._browser = None
         self._page = None
         self._event_loop = None
-        #self._captcha_solver = CaptchaSolver()
-        #There are two ways of using CaptchaSolver im BrowserManager:
-        #1) make captcha_solver atribute of browser to set pahe when it needed
-        #2) Usage like this: async with CaptchaSolver(self._page) as solver: solver.solve()
+        # self._captcha_solver = CaptchaSolver()
+        # There are two ways of using CaptchaSolver im BrowserManager:
+        # 1) make captcha_solver atribute of browser to set pahe when it needed
+        # 2) Usage like this: async with CaptchaSolver(self._page) as solver: solver.solve()
 
     async def init_browser(
         self,
@@ -38,8 +39,8 @@ class BrowserManager:
         )
         self._page = await self._browser.newPage()
         await self._page.setViewport({"width": 1280, "height": 800})
-        #await self._captcha_solver.set_page(self._page)
-        #old realisation, but may have a sense
+        # await self._captcha_solver.set_page(self._page)
+        # old realisation, but may have a sense
 
     async def close_browser(self) -> None:
         """Close the browser instance."""
@@ -243,8 +244,8 @@ class BrowserManager:
             pages = await self._browser.pages()
             if len(pages) > tab_index:
                 self._page = pages[tab_index]
-                #await self._captcha_solver.set_page(self._page)
-                #old realisation but may have a sanse
+                # await self._captcha_solver.set_page(self._page)
+                # old realisation but may have a sanse
                 return True
             else:
                 raise Exception(f"Tab index {tab_index} is out of range.")
@@ -397,7 +398,6 @@ class BrowserManager:
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             return False
-
 
     @property
     def page(self):
