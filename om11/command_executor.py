@@ -1,4 +1,3 @@
-import asyncio
 
 from execute_task_chain import execute_task_chain
 from llm.ask_gpt_chain import ask_gpt_chain
@@ -18,7 +17,9 @@ class CommandExecutor:
 
         # 2. Выполняем цепочку задач
         results = await execute_task_chain(
-            task_chain, task_registry, page=self.page  # Передаем страницу Puppeteer
+            task_chain,
+            task_registry,
+            page=self.page,  # Передаем страницу Puppeteer
         )
 
         return {

@@ -14,6 +14,7 @@ logging.basicConfig(level=logging.INFO)
 headless = os.getenv("HEADLESS", "false").lower() == "true"
 CONFIG_DIR = "instance/user_configs"
 
+
 async def main():
     config_manager = UserConfigManager(config_dir=CONFIG_DIR)
     captcha_service = CaptchaService(
@@ -26,7 +27,6 @@ async def main():
         captcha_service=captcha_service,
     )
     task_registry = register_tasks(tasks)
-
 
     try:
         await browser_manager.init_browser(headless=headless)

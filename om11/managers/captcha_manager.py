@@ -185,7 +185,7 @@ class CaptchaSolver:
                 return await self._solve_capsolver(captcha_type, api_key, params)
             else:
                 raise ValueError(f"Unsupported service: {service}")
-        except Exception as e:
+        except Exception:
             fallback_service = CAPTCHA_PROVIDERS[captcha_type]["fallback"]
             if fallback_service != service:
                 return await self._solve_with_service(
@@ -230,7 +230,7 @@ class CaptchaSolver:
             challenge: str = params["challenge"]
             data["task"]["gt"] = gt
 
-            data["task"]["challenge"] = challange
+            data["task"]["challenge"] = challenge
         elif captcha_type == CaptchaType.GEETEST_V4:
             captcha_id: str = params["captcha_id"]
             data["task"]["gt"] = captcha_id

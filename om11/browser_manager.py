@@ -1,11 +1,9 @@
 import asyncio
 import json
-import os
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 from pyppeteer import launch
 from pyppeteer.errors import PageError, TimeoutError
 
-from managers.captcha_manager import CaptchaSolver
 
 
 class BrowserManager:
@@ -91,7 +89,8 @@ class BrowserManager:
         try:
             await self._page.waitForSelector(selector, {"timeout": timeout})
             return True
-        except:
+        except Exception as e:
+            print(str(e))
             return False
 
     async def check_text(self, text: str, timeout: int = 5000) -> bool:
