@@ -1,7 +1,7 @@
 import pytest
 from playwright.sync_api import sync_playwright
 
-from om11.captchas import (
+from om11.task.captchas import (
     GeetestV3,
     GeetestV4,
     HCaptcha,
