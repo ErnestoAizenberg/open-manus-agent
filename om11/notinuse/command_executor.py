@@ -1,7 +1,7 @@
-from typing import Dict, Callable
-from om11.agent.task.execute_task_chain import execute_task_chain
-from om11.agent.llm.ask_gpt_chain import ask_gpt_chain
+from typing import Callable, Dict
 
+from om11.agent.llm.ask_gpt_chain import ask_gpt_chain
+from om11.agent.task.execute_task_chain import execute_task_chain
 
 
 class CommandExecutor:

@@ -1,8 +1,8 @@
+import json
 import os
 import random
 import re
 import time
-import json
 from typing import Any, Dict, List
 
 from om11.agent.task.captcha_manager import CaptchaSolver

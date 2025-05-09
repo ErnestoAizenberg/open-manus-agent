@@ -1,16 +1,18 @@
 import asyncio
-import aiohttp
-from typing import Dict, Any, Optional, Tuple
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Dict, Optional, Tuple
+
+import aiohttp
+
 from om11.agent.task.captchas import (
     FunCaptcha,
-    Turnstile,
-    ReCaptchaV3,
-    ReCaptchaV2,
-    GeetestV4,
     GeetestV3,
+    GeetestV4,
     HCaptcha,
+    ReCaptchaV2,
+    ReCaptchaV3,
+    Turnstile,
 )
 
 
@@ -271,11 +273,11 @@ class CaptchaSolver:
         """Anti-Captcha API implementation"""
         from python_anticaptcha import AnticaptchaClient
         from python_anticaptcha.tasks import (
-            RecaptchaV2TaskProxyless,
-            RecaptchaV3TaskProxyless,
-            HCaptchaTaskProxyless,
             FunCaptchaTaskProxyless,
             GeeTestTaskProxyless,
+            HCaptchaTaskProxyless,
+            RecaptchaV2TaskProxyless,
+            RecaptchaV3TaskProxyless,
         )
 
         client = AnticaptchaClient(api_key)
@@ -323,7 +325,7 @@ class CaptchaSolver:
         self, captcha_type: CaptchaType, api_key: str, params: Dict[str, Any]
     ) -> CaptchaSolution:
         """CapSolver API implementation"""
-        from python3_capsolver import ReCaptcha, HCaptcha, FunCaptcha, GeeTest
+        from python3_capsolver import FunCaptcha, GeeTest, HCaptcha, ReCaptcha
 
         if captcha_type == CaptchaType.RECAPTCHA_V2:
             solver = ReCaptcha(api_key=api_key)

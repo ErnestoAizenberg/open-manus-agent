@@ -1,11 +1,12 @@
 import json
-from typing import TypedDict, Optional
-import os
 import logging
+import os
+from typing import Optional, TypedDict
 
-__all__ = ['CaptchaConfig', 'CaptchaUser','DBManager',  'CaptchaService']
+__all__ = ["CaptchaConfig", "CaptchaUser", "DBManager", "CaptchaService"]
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
+
 
 class CaptchaConfig:
     one_captcha_cost: float = 0.5
@@ -17,7 +18,7 @@ class CaptchaUser(TypedDict):
     attempts_used: int
     user_limit: int
     balance: float
-    captcha_limit: int  
+    captcha_limit: int
 
 
 class DBManager:
@@ -109,7 +110,9 @@ class CaptchaService:
         new_config: CaptchaUser = {
             "uuid": user_uuid,
             "attempts_used": user.get("attempts_used", 0),
-            "user_limit": user.get("user_limit", self.db_manager.config_dir),  # fallback or proper default
+            "user_limit": user.get(
+                "user_limit", self.db_manager.config_dir
+            ),  # fallback or proper default
             "balance": new_balance,
             "captcha_limit": new_captcha_limit,
         }

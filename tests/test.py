@@ -1,12 +1,15 @@
-from typing import Dict, Optional, List, Any, Callable
 import asyncio
-from om11.execute_task_chain import execute_task_chain, TaskExecutionError, execute_task
+from typing import Any, Callable, Dict, List, Optional
+
+from om11.execute_task_chain import TaskExecutionError, execute_task, execute_task_chain
 
 
-async def main():                          #await test_1()
-    #await test_2()
-    #await test_3()                 
-    #await test_failing_task()
+async def main():
+    await test_1()
+    await test_2()
+    await test_3()
+    await test_failing_task()
+
 
 async def async_task_example(
     param1: str, user_data: Optional[Dict[str, Any]] = None
@@ -29,22 +32,19 @@ async def failing_task_example(user_data: Optional[Dict[str, Any]] = None) -> st
 
 
 async def test_execute_task():
-    #assert task without action raise apropriate error
+    # assert task without action raise apropriate error
     task_without_action = {"params": {}}
     empty_task_registry = {}
     execute_task(
-        task=task_without_action,
-        task_registry=empty_task_registry,
-        user_data=None
+        task=task_without_action, task_registry=empty_task_registry, user_data=None
     )
+
 
 async def test_failing_task():
     test_task_registry = {"failing_task_example": failing_task_example}
     task = {"action": "failing_task_example", "params": {}}
     try:
-        execute_task(
-            task=task, task_registry=test_task_registry, user_data=None
-        )
+        execute_task(task=task, task_registry=test_task_registry, user_data=None)
         assert False, " - TaskExecutionError was awaited but nothing has happend"
     except TaskExecutionError:
         print("+TaskExecutionError as it should")
@@ -70,7 +70,7 @@ async def test_3():
         "blocking_example": blocking_task_example,
         "failing_example": failing_task_example,
     }
-    test_task_chain  = [
+    test_task_chain = [
         {"action": "async_example", "params": {"param1": "value1"}},
         {"action": "non_existent_task"},
         {"action": "failing_example"},
@@ -109,9 +109,18 @@ async def test_1():
     )
     return results
 
-                                    
-def open_url():                            pass                                                                      def fill():                                pass                                                                      def click():
+
+def open_url():
     pass
+
+
+def fill():
+    pass
+
+
+def click():
+    pass
+
 
 async def test_2():
     task_chain = [
@@ -126,6 +135,7 @@ async def test_2():
         task_chain=task_chain, task_registry=task_registry, user_data=user_data
     )
     return results
+
 
 if __name__ == "__main__":
     asyncio.run(main())

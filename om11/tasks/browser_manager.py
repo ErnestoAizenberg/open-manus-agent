@@ -1,9 +1,9 @@
 import asyncio
 import json
 from typing import List, Optional
+
 from pyppeteer import launch
 from pyppeteer.errors import PageError, TimeoutError
-
 
 
 class BrowserManager:

@@ -1,7 +1,7 @@
 import asyncio
 import inspect
 import logging
-from typing import Any, Callable, Dict, List, Optional, Awaitable
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
