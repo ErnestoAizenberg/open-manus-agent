@@ -2,13 +2,17 @@ import asyncio
 import logging
 import os
 
-from browser_manager import BrowserManager
-from handle_command import handle_command
-from managers.captcha_service import CaptchaConfig, CaptchaService
-from managers.config_manager import UserConfigManager
-from task_registry import register_tasks
-from tasks import Tasks
+from om11.agent.task.browser_manager import BrowserManager
+from om11.agent.handle_command import handle_command
+from om11.agent.task.task_registry import register_tasks
+from om11.agent.task.tasks import Tasks
 
+
+from om11.agent.user_manager_v1 import (
+    CaptchaConfig,
+    CaptchaService,
+    DBManager,
+)
 
 logging.basicConfig(level=logging.INFO)
 headless = os.getenv("HEADLESS", "false").lower() == "true"
@@ -16,9 +20,9 @@ CONFIG_DIR = "instance/user_configs"
 
 
 async def main():
-    config_manager = UserConfigManager(config_dir=CONFIG_DIR)
+    db_manager = DBManager(config_dir=CONFIG_DIR)
     captcha_service = CaptchaService(
-        config_manager=config_manager,
+        db_manager=db_manager,
         config=CaptchaConfig(),
     )
     browser_manager = BrowserManager()

@@ -47,6 +47,8 @@ nosetests.xml
 coverage.xml
 *.cover
 *.py,cover
+.ruff_cache/
+.mypy_cache/
 .hypothesis/
 .pytest_cache/
 cover/

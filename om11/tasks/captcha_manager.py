@@ -3,7 +3,7 @@ import aiohttp
 from typing import Dict, Any, Optional, Tuple
 from enum import Enum
 from dataclasses import dataclass
-from captchas import (
+from om11.agent.task.captchas import (
     FunCaptcha,
     Turnstile,
     ReCaptchaV3,

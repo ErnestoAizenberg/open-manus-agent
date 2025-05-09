@@ -1,12 +1,13 @@
+from typing import Dict, Callable
+from om11.agent.task.execute_task_chain import execute_task_chain
+from om11.agent.llm.ask_gpt_chain import ask_gpt_chain
 
-from execute_task_chain import execute_task_chain
-from llm.ask_gpt_chain import ask_gpt_chain
-from task_registry import task_registry
 
 
 class CommandExecutor:
-    def __init__(self, page):  # Принимает страницу Puppeteer
+    def __init__(self, page, task_registry: Dict[str, Callable]):
         self.page = page
+        self.task_registry = task_registry
 
     async def execute(self, command):
         print(f"🔍 Анализ команды: {command}")
@@ -18,7 +19,7 @@ class CommandExecutor:
         # 2. Выполняем цепочку задач
         results = await execute_task_chain(
             task_chain,
-            task_registry,
+            self.task_registry,
             page=self.page,  # Передаем страницу Puppeteer
         )
 

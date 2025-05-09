@@ -1,6 +1,7 @@
 requests
 openai>=0.1.0
 pyppeteer>=0.0.1
+playwright
 python-dotenv>=0.1.0
 pyppeteer_stealth>=2.0.0
 websockets>=10.0

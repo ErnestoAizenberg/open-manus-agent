@@ -2,7 +2,10 @@ import os
 import random
 import re
 import time
+import json
 from typing import Any, Dict, List
+
+from om11.agent.task.captcha_manager import CaptchaSolver
 
 
 class Tasks:
@@ -230,8 +233,9 @@ class Tasks:
         if not self.captcha_service.can_use_captcha(user_id):
             raise ValueError("🚫 Превышен лимит капча-решений для пользователя")
 
-        api_keys = self.captcha_service.load_api_keys()
-        from managers.captcha_manager import CaptchaSolver
+        path = "instance/api_keys/api_keys.json"
+        with open(path, "r") as f:
+            api_keys: Dict[str, str] = json.load(f)
 
         async with CaptchaSolver(self.browser.page) as solver:
             status = await solver.solve(api_keys=api_keys)
