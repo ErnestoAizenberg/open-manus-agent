@@ -2,11 +2,11 @@ import asyncio
 import logging
 import os
 
-from om11.agent.handle_command import handle_command
-from om11.agent.task.browser_manager import BrowserManager
-from om11.agent.task.task_registry import register_tasks
-from om11.agent.task.tasks import Tasks
-from om11.agent.user_manager_v1 import CaptchaConfig, CaptchaService, DBManager
+from om11.handle_command import handle_command
+from om11.task.browser_manager import BrowserManager
+from om11.task.task_registry import register_tasks
+from om11.task.tasks import Tasks
+from om11.user_manager_v1 import CaptchaConfig, CaptchaService, DBManager
 
 logging.basicConfig(level=logging.INFO)
 headless = os.getenv("HEADLESS", "false").lower() == "true"

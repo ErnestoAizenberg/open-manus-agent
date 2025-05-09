@@ -1,7 +1,11 @@
 import asyncio
 from typing import Any, Callable, Dict, List, Optional
 
-from om11.task.execute_task_chain import TaskExecutionError, execute_task, execute_task_chain
+from om11.task.execute_task_chain import (
+    TaskExecutionError,
+    execute_task,
+    execute_task_chain,
+)
 
 
 async def main():

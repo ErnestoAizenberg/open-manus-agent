@@ -89,9 +89,9 @@ class TestCaptchaDetection:
         data = page.evaluate(captcha.DATA_SCRIPT)
 
         # Verify we got the expected data structure
-        assert isinstance(
-            data, dict
-        ), f"Data script should return a dictionary for {captcha_type}"
+        assert isinstance(data, dict), (
+            f"Data script should return a dictionary for {captcha_type}"
+        )
 
         # Verify required fields
         if captcha_type in ["ReCaptchaV2", "ReCaptchaV3", "HCaptcha", "Turnstile"]:
@@ -166,6 +166,6 @@ class TestNegativeCases:
         ]:
             captcha = captcha_class()
             result = page.evaluate(captcha.DETECT_SCRIPT)
-            assert (
-                result is None or result is False
-            ), f"{captcha_class.__name__} incorrectly detected CAPTCHA"
+            assert result is None or result is False, (
+                f"{captcha_class.__name__} incorrectly detected CAPTCHA"
+            )
