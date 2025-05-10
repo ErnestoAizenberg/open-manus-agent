@@ -1,4 +1,3 @@
-# Добавьте эту проверку перед подключением
 import requests
 
 BROWSERSTACK_USER = "sereernest@gmail.com"
@@ -8,4 +7,4 @@ response = requests.get(
     "https://api.browserstack.com/automate/plan.json",
     auth=(BROWSERSTACK_USER, BROWSERSTACK_KEY),
 )
-print(response.json())  # Проверьте наличие 'cdp' в возможностях
+print(response.json())  # 'cdp' to be checked

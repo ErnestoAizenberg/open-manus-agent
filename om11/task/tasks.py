@@ -5,7 +5,7 @@ import re
 import time
 from typing import Any, Dict, List
 
-from om11.agent.task.captcha_manager import CaptchaSolver
+from om11.task.captcha_manager import CaptchaSolver
 
 
 class Tasks:

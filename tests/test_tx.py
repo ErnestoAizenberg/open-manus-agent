@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from om11.tasks.execute_task_chain import (
+from om11.task.execute_task_chain import (
     InvalidTaskChainError,
     InvalidTaskRegistryError,
     TaskExecutionError,

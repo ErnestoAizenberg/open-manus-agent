@@ -1,5 +1,5 @@
-from om11.agent.llm.ask_gpt_chain import ask_gpt_chain
-from om11.agent.task.execute_task_chain import execute_task_chain
+from om11.llm.ask_gpt_chain import ask_gpt_chain
+from om11.task.execute_task_chain import execute_task_chain
 
 
 async def handle_command(user_input, task_registry):

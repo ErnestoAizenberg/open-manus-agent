@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import aiohttp
 
-from om11.agent.task.captchas import (
+from om11.task.captchas import (
     FunCaptcha,
     GeetestV3,
     GeetestV4,
