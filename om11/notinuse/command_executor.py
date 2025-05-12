@@ -1,12 +1,15 @@
-from typing import Callable, Dict
 
 from om11.llm.ask_gpt_chain import ask_gpt_chain
 from om11.task.execute_task_chain import execute_task_chain
 
 
 class CommandExecutor:
-    def __init__(self, page, task_registry: Dict[str, Callable]):
-        self.page = page
+    def __init__(
+        self,
+        # page,
+        task_registry,
+    ):
+        # self.page = page
         self.task_registry = task_registry
 
     async def execute(self, command):
@@ -20,7 +23,7 @@ class CommandExecutor:
         results = await execute_task_chain(
             task_chain,
             self.task_registry,
-            page=self.page,  # Передаем страницу Puppeteer
+            # page=self.page,  # Передаем страницу Puppeteer
         )
 
         return {

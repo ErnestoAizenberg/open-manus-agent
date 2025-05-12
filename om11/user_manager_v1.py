@@ -22,7 +22,10 @@ class CaptchaUser(TypedDict):
 
 
 class DBManager:
-    def __init__(self, config_dir: str):
+    def __init__(self):
+        self.config_dir: str = ""
+
+    def init(self, config_dir: str):
         self.config_dir = config_dir
         os.makedirs(self.config_dir, exist_ok=True)
 
@@ -39,24 +42,30 @@ class DBManager:
         try:
             with open(self.get_user_config_path(user_id), "r") as f:
                 user_data = json.load(f)
-                return user_data
+                if self._validate_captcha_user(user_data):
+                    return user_data  # type: ignore
+                else:
+                    logger.warning(f"Invalid user data for {user_id}")
+                    return None
         except (IOError, json.JSONDecodeError) as e:
             logger.error(f"Error reading config for user {user_id}: {e}")
             return None
 
-    def load_config(self, user_id: str) -> Optional[dict]:
-        # Helper method to load config
+    def load_config(self, user_id: str) -> Optional[CaptchaUser]:
         return self.get_user(user_id)
 
     def update_user(self, user: CaptchaUser) -> Optional[CaptchaUser]:
         user_id = user["uuid"]
         existing_config = self.load_config(user_id)
         if existing_config is not None:
+            # Обновляем существующий конфиг
             existing_config.update(user)
             return self.save_config(user_id, existing_config)
-        return None
+        else:
+            # Если нет существующего — создаем новый
+            return self.save_config(user_id, user)
 
-    def save_config(self, user_id: str, config: dict) -> Optional[CaptchaUser]:
+    def save_config(self, user_id: str, config: CaptchaUser) -> Optional[CaptchaUser]:
         try:
             with open(self.get_user_config_path(user_id), "w") as f:
                 json.dump(config, f, separators=(",", ":"))
@@ -75,6 +84,31 @@ class DBManager:
             logger.error(f"Error removing config for user {user_id}: {e}")
             return False
 
+    def _validate_captcha_user(self, data) -> bool:
+        # Простая проверка, что все поля есть и типы соответствуют
+        required_fields = {
+            "uuid",
+            "attempts_used",
+            "user_limit",
+            "balance",
+            "captcha_limit",
+        }
+        if not isinstance(data, dict):
+            return False
+        if not required_fields.issubset(data.keys()):
+            return False
+        if not isinstance(data["uuid"], str):
+            return False
+        if not isinstance(data["attempts_used"], int):
+            return False
+        if not isinstance(data["user_limit"], int):
+            return False
+        if not isinstance(data["balance"], (int, float)):
+            return False
+        if not isinstance(data["captcha_limit"], int):
+            return False
+        return True
+
 
 class CaptchaService:
     def __init__(self, db_manager: DBManager, config: CaptchaConfig):
@@ -85,38 +119,32 @@ class CaptchaService:
         user = self.db_manager.get_user(user_uuid)
         if user is None:
             return False
-        # Assuming user dict contains 'balance' and 'captcha_limit'
-        condition = (
-            user.get("balance", 0) >= self.config.one_captcha_cost
-            and user.get("captcha_limit", 0) >= 1
+        return (
+            user["balance"] >= self.config.one_captcha_cost
+            and user["captcha_limit"] >= 1
         )
-        return condition
 
     def increment_user_usage(self, user_uuid: str) -> bool:
         user = self.db_manager.get_user(user_uuid)
         if user is None:
             return False
 
-        user_balance = user.get("balance", 0)
-        captcha_limit = user.get("captcha_limit", 0)
+        user_balance = user["balance"]
+        captcha_limit = user["captcha_limit"]
 
         if user_balance < self.config.one_captcha_cost or captcha_limit < 1:
-            return False  # Not enough balance or captcha limit
+            return False  # Недостаточно баланса или лимита
 
         new_balance = user_balance - self.config.one_captcha_cost
         new_captcha_limit = captcha_limit - 1
 
-        # Prepare updated user data
-        new_config: CaptchaUser = {
+        new_user: CaptchaUser = {
             "uuid": user_uuid,
-            "attempts_used": user.get("attempts_used", 0),
-            "user_limit": user.get(
-                "user_limit", self.db_manager.config_dir
-            ),  # fallback or proper default
+            "attempts_used": user["attempts_used"],
+            "user_limit": user["user_limit"],
             "balance": new_balance,
             "captcha_limit": new_captcha_limit,
         }
 
-        updated_user = self.db_manager.update_user(new_config)
-
+        updated_user = self.db_manager.update_user(new_user)
         return updated_user is not None

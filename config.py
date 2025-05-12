@@ -2,6 +2,7 @@
 import os
 
 from dotenv import load_dotenv
+
 from tools.args_parser import parse_arguments
 
 load_dotenv("instance/.env")

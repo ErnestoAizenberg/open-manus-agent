@@ -1,0 +1,7 @@
+{
+  "include": ["om11"],
+  "exclude": [
+    "tests",
+  ],
+  "reportMissingTypeStubs": false
+}

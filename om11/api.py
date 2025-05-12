@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, HTTPException, Query, Body
 from fastapi.responses import JSONResponse
 
 from om11.handle_command import handle_command
@@ -31,6 +31,9 @@ class APIHandler:
         self.app.add_api_route(
             "/api/execute_command/", self.execute_command, methods=["GET"]
         )
+        self.app.add_api_route(
+            "/api/browser/start/", self.start_browser, methods=["POST"]
+        )
 
     async def execute_command(
         self,
@@ -49,6 +52,28 @@ class APIHandler:
             )
             self.logger.debug("\n".join(result))
             return JSONResponse(content=result)
+        except Exception as e:
+            self.logger(str(e))
+            return JSONResponse(content={"error": "An error occurred"}, status_code=500)
+        finally:
+            await self.browser_manager.close_browser()
+
+    async def start_browser(
+        self,
+        ws_url: str = Body(..., embed=True)  # Accept ws_url via JSON body
+    ):
+        headless = True
+        if not ws_url:
+            raise HTTPException(status_code=400, detail="Missing ws_url")
+        try:
+            # Initialize browser
+            await self.browser_manager.init_browser(headless=headless)
+            # Connect to WebSocket URL
+            status = self.browser_manager.connect_ws(ws_url)
+            if status:
+                return {"success": True, "message": "Connected to WebSocket"}
+            else:
+                return {"success": False, "message": "Failed to connect"}
         except Exception as e:
             self.logger(str(e))
             return JSONResponse(content={"error": "An error occurred"}, status_code=500)

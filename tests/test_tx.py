@@ -140,7 +140,7 @@ async def test_execute_task_chain_with_errors(task_registry):
 async def test_execute_task_chain_invalid_registry():
     task_chain = [{"action": "add", "params": {"a": 1, "b": 2}}]
     with pytest.raises(InvalidTaskRegistryError):
-        await execute_task_chain(task_chain, None)
+        await execute_task_chain(task_chain, None)  # noqa
 
 
 @pytest.mark.asyncio

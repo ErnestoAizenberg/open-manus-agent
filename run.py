@@ -1,6 +1,7 @@
 import uvicorn
-from om11 import create_app
+
 from config import Config, RedisConfig
+from om11 import create_app
 
 if __name__ == "__main__":
     app = create_app(
@@ -12,6 +13,6 @@ if __name__ == "__main__":
         app,
         host=app.state.config.get("HOST", "0.0.0.0"),
         port=app.state.config.get("PORT", 8000),
-        #debug=app.state.config.get("DEBUG", False),
+        # debug=app.state.config.get("DEBUG", False),
         # uvicorn.run dose not have debug param
     )

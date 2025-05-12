@@ -1,14 +1,19 @@
+import os
 import asyncio
 
-from command_executor import CommandExecutor
 from pyppeteer import connect
 from pyppeteer.errors import NetworkError
+
+from om11.notinuse.command_executor import CommandExecutor
 
 
 async def test_manus_agent_on_browserstack():
     # Конфигурация BrowserStack
     BROWSERSTACK_USER = "sereernest@gmail.com"
-    BROWSERSTACK_KEY = "PoF4jrAZXDDUsX2WysDC"
+    BROWSERSTACK_KEY = os.getenv("BROWSERSTACK_KEY")
+    if not BROWSERSTACK_KEY:
+        print("Please provide BROWSERSTACK_KEY")
+
     BROWSERSTACK_CDP_URL = f"wss://cdp.browserstack.com/puppeteer?user={BROWSERSTACK_USER}&key={BROWSERSTACK_KEY}"
 
     try:

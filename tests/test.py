@@ -39,7 +39,7 @@ async def test_execute_task():
     # assert task without action raise apropriate error
     task_without_action = {"params": {}}
     empty_task_registry = {}
-    execute_task(
+    await execute_task(
         task=task_without_action, task_registry=empty_task_registry, user_data=None
     )
 
@@ -48,7 +48,7 @@ async def test_failing_task():
     test_task_registry = {"failing_task_example": failing_task_example}
     task = {"action": "failing_task_example", "params": {}}
     try:
-        execute_task(task=task, task_registry=test_task_registry, user_data=None)
+        await execute_task(task=task, task_registry=test_task_registry, user_data=None)
         assert False, " - TaskExecutionError was awaited but nothing has happend"
     except TaskExecutionError:
         print("+TaskExecutionError as it should")

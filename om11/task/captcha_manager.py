@@ -46,7 +46,7 @@ CAPTCHA_PROVIDERS = {
 @dataclass
 class CaptchaSolution:
     token: str
-    additional_data: Dict[str, Any] = None
+    additional_data: Optional[Dict[str, Any]] = None
 
 
 # --- MAIN SOLVER CLASS ---
@@ -82,7 +82,7 @@ class CaptchaSolver:
 
     async def detect(self) -> Optional[Tuple[str, Dict[str, Any]]]:
         """Detect captcha and return type with parameters"""
-        url = await self.page.url()
+        url = await self.page.url
         cached_result = self._captcha_cache.get(url)
 
         if cached_result:
@@ -100,8 +100,8 @@ class CaptchaSolver:
     async def solve(
         self,
         service: str = "auto",
-        api_key: str = None,
-        api_keys: Dict[str, str] = None,
+        api_key: str | None = None,
+        api_keys: Dict[str, str] | None = None,
     ) -> bool:
         detection_result = await self.detect()
         if not detection_result:
@@ -215,18 +215,21 @@ class CaptchaSolver:
             data["task"]["websiteKey"] = sitekey
         elif captcha_type == CaptchaType.RECAPTCHA_V3:
             sitekey: str = params["sitekey"]
+            action: str = params.get("action", "verify")
             data["task"]["websiteKey"] = sitekey
             data["task"]["minScore"] = 0.5
-            data["task"]["pageAction"]: str = params.get("action", "verify")
+            data["task"]["pageAction"] = action
         elif captcha_type == CaptchaType.HCAPTCHA:
             sitekey: str = params["sitekey"]
             data["task"]["websiteKey"] = sitekey
         elif captcha_type == CaptchaType.TURNSTILE:
             sitekey: str = params["sitekey"]
+            action: str = params.get("action", "default")
             data["task"]["websiteKey"] = sitekey
-            data["task"]["action"]: str = params.get("action", "default")
+            data["task"]["action"] = action
         elif captcha_type == CaptchaType.FUNCAPTCHA:
-            data["task"]["websitePublicKey"]: str = params["public_key"]
+            public_key: str = params["public_key"]
+            data["task"]["websitePublicKey"] = public_key
         elif captcha_type == CaptchaType.GEETEST_V3:
             gt: str = params["gt"]
             challenge: str = params["challenge"]
@@ -326,6 +329,9 @@ class CaptchaSolver:
     ) -> CaptchaSolution:
         """CapSolver API implementation"""
         from python3_capsolver import FunCaptcha, GeeTest, HCaptcha, ReCaptcha
+
+        # from python3_capsolver.gee_test import GeeTest
+        # from python3_capsolver.recaptcha import ReCaptcha
 
         if captcha_type == CaptchaType.RECAPTCHA_V2:
             solver = ReCaptcha(api_key=api_key)
