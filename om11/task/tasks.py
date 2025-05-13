@@ -149,7 +149,8 @@ class Tasks:
         return f"Clicked link with text: {text}"
 
     async def detect_captcha_type(self) -> Any:
-        async with CaptchaSolver(self.browser.context.new_page()) as solver:
+        #self.browser.context.new_page()
+        async with CaptchaSolver(self.browser._page) as solver:
             return solver.detect()
 
     async def download_file(self, url: str) -> str:
@@ -241,7 +242,7 @@ class Tasks:
         with open(api_keys_path, "r") as f:
             api_keys: Dict[str, str] = json.load(f)
 
-        async with CaptchaSolver(self.browser.context.new_page()) as solver:
+        async with CaptchaSolver(self.browser._page) as solver:
             status = await solver.solve(api_keys=api_keys)
             if status:
                 self.captcha_service.increment_user_usage(user_id)

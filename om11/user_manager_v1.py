@@ -22,8 +22,8 @@ class CaptchaUser(TypedDict):
 
 
 class DBManager:
-    def __init__(self):
-        self.config_dir: str = ""
+    def __init__(self, config_dir: str = "instance/user_configs"):
+        self.config_dir: str = config_dir
 
     def init(self, config_dir: str):
         self.config_dir = config_dir

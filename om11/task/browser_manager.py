@@ -25,9 +25,6 @@ class BrowserManager:
         if self._playwright is None:
             self._playwright = await async_playwright().start()
 
-        # Determine connection method based on setup
-        # For Chromium, you can use connect_over_cdp if CDP endpoint is available
-        # Otherwise, fallback to connect
         try:
             self._browser = await self._playwright.chromium.connect_over_cdp(ws_url)
         except Exception:
