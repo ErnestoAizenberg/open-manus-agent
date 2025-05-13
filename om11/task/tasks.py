@@ -149,7 +149,7 @@ class Tasks:
         return f"Clicked link with text: {text}"
 
     async def detect_captcha_type(self) -> Any:
-        #self.browser.context.new_page()
+        # self.browser.context.new_page()
         async with CaptchaSolver(self.browser._page) as solver:
             return solver.detect()
 

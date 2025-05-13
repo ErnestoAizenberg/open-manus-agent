@@ -1,11 +1,14 @@
 from typing import List
-from fastapi import FastAPI, Query, HTTPException
+
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
+
 from om11.handle_command import handle_command
 from om11.task.browser_manager import BrowserManager
 from om11.task.task_registry import register_tasks
 from om11.task.tasks import Tasks
 from om11.user_manager_v1 import CaptchaConfig, CaptchaService, DBManager
+
 
 class APIHandler:
     def __init__(self, app: FastAPI, config, logger):
@@ -46,7 +49,9 @@ class APIHandler:
         if not message or not user_uuid:
             raise HTTPException(status_code=400, detail="Missing required parameters")
         try:
-            browser_manager_instance = await self.get_or_create_browser_manager(user_uuid, headless)
+            browser_manager_instance = await self.get_or_create_browser_manager(
+                user_uuid, headless
+            )
 
             tasks = Tasks(
                 browser_manager=browser_manager_instance,
@@ -64,7 +69,9 @@ class APIHandler:
             self.logger.error(str(e))
             return JSONResponse(content={"error": "An error occurred"}, status_code=500)
 
-    async def close_browser(self, user_uuid: str = Query(..., description="User UUID")) -> dict:
+    async def close_browser(
+        self, user_uuid: str = Query(..., description="User UUID")
+    ) -> dict:
         # Метод для закрытия браузера пользователя
         browser_manager = self.user_browsers.get(user_uuid)
         if browser_manager:

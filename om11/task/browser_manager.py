@@ -4,12 +4,8 @@ import random
 import re
 from typing import Any, Callable, List, Optional
 
-from playwright.async_api import (
-    Browser,
-    Page,
-    Playwright,  # BrowserType,
-    async_playwright,
-)
+from playwright.async_api import Playwright  # BrowserType,
+from playwright.async_api import Browser, Page, async_playwright
 
 
 class BrowserManager:

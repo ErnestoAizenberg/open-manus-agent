@@ -1,5 +1,5 @@
-import os
 import asyncio
+import os
 
 from pyppeteer import connect
 from pyppeteer.errors import NetworkError
