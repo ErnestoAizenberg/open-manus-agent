@@ -1,16 +1,15 @@
 requests
 httpx
-openai>=0.1.0
-pyppeteer>=0.0.1
+uvicorn
+fastapi
+#openai>=0.1.0
 playwright
-python-dotenv>=0.1.0
-pyppeteer_stealth>=2.0.0
-websockets>=10.0
-python_anticaptcha>=0.1.0
-capmonstercloudclient>=0.1.0
+python-dotenv
+websockets
+python_anticaptcha
+capmonstercloudclient
 python_anticaptcha
 python3_capsolver
 
 # Type stubs for dependencies
 types-requests
-flask
