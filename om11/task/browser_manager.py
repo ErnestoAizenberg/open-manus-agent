@@ -23,7 +23,8 @@ class BrowserManager:
 
         try:
             self._browser = await self._playwright.chromium.connect_over_cdp(ws_url)
-        except Exception:
+        except Exception as e:
+            print(str(e))
             self._browser = await self._playwright.chromium.connect(ws_url)
         self._page = await self._browser.new_page()
 

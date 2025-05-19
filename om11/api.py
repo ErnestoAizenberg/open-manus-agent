@@ -95,13 +95,10 @@ class APIHandler:
         message: str = Query(..., description="User message"),
         user_uuid: str = Query(..., description="User UUID"),
     ) -> JSONResponse:
-        headless = True
         if not message or not user_uuid:
             raise HTTPException(status_code=400, detail="Missing required parameters")
         try:
-            browser_manager_instance = await self.get_browser_manager(
-                user_uuid, headless
-            )
+            browser_manager_instance = await self.get_browser_manager(user_uuid)
             if not browser_manager_instance:
                 JSONResponse(
                     content={"error": "Browser is not connected"}, status_code=400
