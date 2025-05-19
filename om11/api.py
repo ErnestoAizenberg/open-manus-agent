@@ -20,12 +20,12 @@ class APIHandler:
             db_manager=self.db_manager,
             config=CaptchaConfig(),
         )
-        # Хранилище браузеров по пользователям
+        # Dict to store browsers by user id
         self.user_browsers = {}  # dict: user_uuid -> browser_instance
 
         # Register routes
         self.app.add_api_route(
-            "/api/execute_command/", self.execute_command, methods=["GET"]
+            "/api/execute_command/", self.execute_command, methods=["POST"]
         )
         self.app.add_api_route(
             "/api/start_browser/", self.start_browser_route, methods=["POST"]
@@ -33,8 +33,11 @@ class APIHandler:
         self.app.add_api_route(
             "/api/close_browser/", self.close_browser, methods=["POST"]
         )
+        self.app.add_api_route(
+            "/api/check-agent-status/", self.check_browser_route, methods=["GET"]
+        )
 
-    async def get_browser_manager(self, user_uuid: str, headless: bool):
+    async def get_browser_manager(self, user_uuid: str):
         if user_uuid in self.user_browsers:
             return self.user_browsers[user_uuid]
         else:
@@ -51,10 +54,19 @@ class APIHandler:
         self.user_browsers[user_uuid] = browser_manager
         return self.user_browsers[user_uuid]
 
+    async def check_browser_route(
+        self,
+        user_uuid: str = Query(..., description="User uuid"),
+    ) -> JSONResponse:
+
+        browser_manager = self.get_browser_manager(user_uuid)
+        is_active = True if browser_manager else False
+        return JSONResponse(content={"active": is_active}, status_code=200)
+
     async def start_browser_route(
         self,
         ws_url: str = Query(..., description="Websoket url for running user browser"),
-        user_uuid: str = Query(..., description="<User uuid"),
+        user_uuid: str = Query(..., description="User uuid"),
     ) -> JSONResponse:
         try:
             browser_manager = BrowserManager()
