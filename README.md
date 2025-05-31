@@ -1,3 +1,5 @@
+![Python](https://img.shields.io/badge/Python-3.7-a2d2ff) ![FastAPI](https://img.shields.io/badge/FastAPI-0.115.1-ffafcc) ![SQLAlchemy](https://img.shields.io/badge/Flask--SQLAlchemy-3.1.1-bde0fe) ![redis](https://img.shields.io/badge/redis-latest-cddaaf)
+
 # Open Manus Agent
 
 A microservices-based agent for managing browsers via AI, featuring a macOS web UI and Telegram chat interface. Built on FastAPI for asynchronous operation.
