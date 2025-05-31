@@ -1,5 +1,5 @@
 # open-manus-agent
-An Open Manus Agent is a microservices-based Agent for managing browsers via AI with MACOS WEB UO and Telegram chat UI.
+An Open Manus Agent is a microservices-based Agent for managing browsers via AI with MACOS WEB UI and Telegram chat UI.
 
 Run asynchronously on FastAPI.
 ```shell
