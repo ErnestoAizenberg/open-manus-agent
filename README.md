@@ -1,15 +1,22 @@
-# open-manus-agent
-An Open Manus Agent is a microservices-based Agent for managing browsers via AI with MACOS WEB UI and Telegram chat UI.
+# Open Manus Agent
 
-Run asynchronously on FastAPI.
-```shell
-git clone https://github.com/ErnestoAizenberg/open-manus-agent.git && cd open-manus-agent && pip install -r requirements.txt && python run.py
-```
-You will be able to set the ports and some configuration up during run, but you can just press Enter for the default.
-Then the app will run on: http://localhost:5000/
+A microservices-based agent for managing browsers via AI, featuring a macOS web UI and Telegram chat interface. Built on FastAPI for asynchronous operation.
 
-### Main web component:
-https://github.com/ErnestoAizenberg/OM11MACOS
+## Quick Start
 
-### Telegram interestion:
-https://github.com/ErnestoAizenberg/OM11TG
+1. Clone the repository and install dependencies:
+   ```shell
+   git clone https://github.com/ErnestoAizenberg/open-manus-agent.git
+   cd open-manus-agent
+   pip install -r requirements.txt
+   python run.py
+   ```
+
+2. Configure ports and settings during runtime (press Enter for defaults)
+
+3. Access the application at: http://localhost:5000/
+
+## Components
+
+- **Main Web UI**: [OM11MACOS](https://github.com/ErnestoAizenberg/OM11MACOS)
+- **Telegram Integration**: [OM11TG](https://github.com/ErnestoAizenberg/OM11TG)
