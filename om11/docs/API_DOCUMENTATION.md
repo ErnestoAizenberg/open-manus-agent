@@ -5,7 +5,7 @@ This documentation describes the API endpoints provided by the `APIHandler` clas
 All API endpoints are prefixed with `/api/`.
 
 ## Authentication
-The API currently does not implement authentication in the provided code. User identification is handled via `user_uuid` parameters.
+The API currently does not implement authentication. User identification is handled via `user_uuid` parameters.
 
 ## Endpoints
 
