@@ -1,7 +1,6 @@
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=FFD43B&labelColor=3776AB&color=FFD43B) 
 [![requests](https://img.shields.io/badge/requests-2.31.0-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://docs.python-requests.org) [![httpx](https://img.shields.io/badge/httpx-0.25.0-00B4AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python-httpx.org)  
-[![uvicorn](https://img.shields.io/badge/uvicorn-0.23.0-6E00F7?style=for-the-badge&logo=python&logoColor=white)](https://www.uvicorn.org) 
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.103.0-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)  
+[![uvicorn](https://img.shields.io/badge/uvicorn-0.23.0-6E00F7?style=for-the-badge&logo=python&logoColor=white)](https://www.uvicorn.org) [![FastAPI](https://img.shields.io/badge/FastAPI-0.103.0-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)  
 [![openai](https://img.shields.io/badge/openai->=0.1.0-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com)  
 [![playwright](https://img.shields.io/badge/playwright-1.39.0-FF6B00?style=for-the-badge&logo=playwright&logoColor=white)](https://playwright.dev) 
 [![websockets](https://img.shields.io/badge/websockets-11.0.0-FF4D4D?style=for-the-badge&logo=websocket&logoColor=white)](https://websockets.readthedocs.io)  
