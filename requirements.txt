@@ -1,8 +1,8 @@
 aiohttp==3.12.15
 fastapi==0.116.1
-playwright==1.54.0
+playwright
 py_mini_racer==0.6.0
-pyppeteer==2.0.0
+pyppeteer
 pytest==8.3.5
 python-dotenv==1.1.1
 python3_capsolver==1.1.0
