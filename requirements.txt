@@ -1,15 +1,15 @@
-requests
-httpx
-uvicorn
-fastapi
+aiohttp==3.12.15
+fastapi==0.116.1
+playwright==1.54.0
+py_mini_racer==0.6.0
+pyppeteer==2.0.0
+pytest==8.3.5
+python-dotenv==1.1.1
+python3_capsolver==1.1.0
+python_anticaptcha==1.0.0
+Requests==2.32.4
+uvicorn==0.35.0
 #openai>=0.1.0
-playwright
-python-dotenv
-websockets
-python_anticaptcha
-capmonstercloudclient
-python_anticaptcha
-python3_capsolver
 
 # Type stubs for dependencies
 types-requests
