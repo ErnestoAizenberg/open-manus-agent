@@ -69,8 +69,9 @@ class APIHandler:
         user_uuid: str = Query(..., description="User uuid"),
     ) -> JSONResponse:
         try:
+            self.logger.info(f'Starting browser for user: {user_uuid} with ws_url: {ws_url}')
             browser_manager = BrowserManager()
-            browser_manager.connect_ws(ws_url)
+            await browser_manager.connect_ws(ws_url)
             if browser_manager._browser:
                 self.user_browsers[user_uuid] = browser_manager
                 return JSONResponse(
@@ -86,7 +87,8 @@ class APIHandler:
                 )
         except Exception as e:
             self.logger.error(
-                f"Error occured while setting up user browser_manager instance: {str(e)}"
+                f"Error occured while setting up user browser_manager instance: {str(e)}",
+                exc_info=True,
             )
             return JSONResponse(content={"error": "An error occured"}, status_code=500)
 
@@ -123,6 +125,7 @@ class APIHandler:
     async def close_browser(
         self, user_uuid: str = Query(..., description="User UUID")
     ) -> dict:
+        self.logger.info(f"Closing browser for user: {user_uuid}")
         # Метод для закрытия браузера пользователя
         browser_manager = self.user_browsers.get(user_uuid)
         if browser_manager:
