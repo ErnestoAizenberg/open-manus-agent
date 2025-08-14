@@ -11,7 +11,7 @@ class Config:
     DEBUG = os.getenv("FLASK_DEBUG", "false").lower() in ["true", "1", "t"]
     SERVER_ADDRESS = os.getenv("SERVER_ADDRESS", "https://example.com")
     HOST = os.getenv("HOST")
-    PORT = os.getenv("PORT")
+    PORT = int(os.getenv("PORT"))
 
     def get(self, key, default=None):
         return getattr(self, key, default)
