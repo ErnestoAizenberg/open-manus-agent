@@ -44,6 +44,52 @@ class ColoredFormatter(logging.Formatter):
 
         return super().format(record)
 
+ import logging
+import sys
+from logging.handlers import RotatingFileHandler
+from typing import Dict, Any
+
+# Color codes
+COLORS: Dict[str, str] = {
+    "RESET": "\x1b[0m",
+    "BLACK": "\x1b[30m",
+    "RED": "\x1b[31m",
+    "GREEN": "\x1b[32m",
+    "YELLOW": "\x1b[33m",
+    "BLUE": "\x1b[34m",
+    "MAGENTA": "\x1b[35m",
+    "CYAN": "\x1b[36m",
+    "WHITE": "\x1b[37m",
+}
+
+LOG_LEVEL_COLORS: Dict[str, str] = {
+    "DEBUG": COLORS["BLUE"],
+    "INFO": COLORS["GREEN"],
+    "WARNING": COLORS["YELLOW"],
+    "ERROR": COLORS["RED"],
+    "CRITICAL": COLORS["MAGENTA"],
+}
+
+
+class ColoredFormatter(logging.Formatter):
+    """Enhanced log formatter with colors and additional context information."""
+
+    def __init__(self, fmt: str, datefmt: str = None):
+        super().__init__(fmt, datefmt)
+        self._fmt = fmt
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Format the specified record with colors."""
+        color = LOG_LEVEL_COLORS.get(record.levelname, COLORS["RESET"])
+        record.levelname = f"{color}{record.levelname}{COLORS['RESET']}"
+        record.msg = f"{color}{record.msg}{COLORS['RESET']}"
+
+        # Include filename and line number for debug purposes
+        if record.levelno >= logging.WARNING:
+            record.msg = f"{record.msg} | {record.filename}:{record.lineno}"
+
+        return super().format(record)
+
 
 def setup_logger(
     name: str = __name__,
@@ -82,7 +128,7 @@ def setup_logger(
     # File handler with rotation if log file is specified
     if log_file:
         file_handler = RotatingFileHandler(
-            log_file, maxBytes=max_bytes, backupCount=backup_count
+            log_file, maxBytes=max_bytes, backupCount=backup_count, encoding='utf-8'
         )
         file_formatter = logging.Formatter(
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
