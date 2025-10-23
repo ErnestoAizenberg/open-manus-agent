@@ -17,12 +17,11 @@ A microservices-based agent for managing browsers via AI, featuring a macOS web 
 1. Clone the repository and install dependencies:
    ```shell
    git clone https://github.com/ErnestoAizenberg/open-manus-agent.git
+   cp .env.example.env
    cd open-manus-agent
    pip install -r requirements.txt
    python run.py
    ```
-
-2. Configure ports and settings during runtime (press Enter for defaults)
 
 3. Access the application at: http://localhost:5000/
 
