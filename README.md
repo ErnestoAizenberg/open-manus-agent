@@ -7,9 +7,9 @@
   <img src="https://img.shields.io/badge/openai->=0.1.0-412991?style=flat-square&logo=openai&logoColor=white" alt="openai">
   <img src="https://img.shields.io/badge/playwright-1.39.0-FF6B00?style=flat-square&logo=playwright&logoColor=white" alt="playwright">
   <img src="https://img.shields.io/badge/websockets-11.0.0-FF4D4D?style=flat-square&logo=websocket&logoColor=white" alt="websockets">
-  <img src="https://img.shields.io/badge/python__anticaptcha-2.0.0-1E3A8A?style=flat-square&logo=shield-lock&logoColor=white" alt="python_anticaptcha">
-  <img src="https://img.shields.io/badge/capmonstercloudclient-1.2-4B5563?style=flat-square&logo=probot&logoColor=white" alt="capmonstercloudclient">
-  <img src="https://img.shields.io/badge/python3__capsolver-1.0-111827?style=flat-square&logo=verified&logoColor=white" alt="python3_capsolver">
+  <img src="https://img.shields.io/badge/python__anticaptcha-1E3A8A?style=flat-square&logo=shield-lock&logoColor=white" alt="python_anticaptcha">
+  <img src="https://img.shields.io/badge/capmonstercloudclient-4B5563?style=flat-square&logo=probot&logoColor=white" alt="capmonstercloudclient">
+  <img src="https://img.shields.io/badge/python3__capsolver-111827?style=flat-square&logo=verified&logoColor=white" alt="python3_capsolver">
 </p> 
 
 # Open Manus Agent
