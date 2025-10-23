@@ -23,7 +23,7 @@ A microservices-based agent for managing browsers via AI, featuring a macOS web 
    python run.py
    ```
 
-3. Access the application at: http://localhost:5000/
+3. Access the application at: http://localhost:9912/
 
 ## Components
 
