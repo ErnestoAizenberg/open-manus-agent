@@ -23,8 +23,6 @@ A microservices-based agent for managing browsers via AI, featuring a macOS web 
    python run.py
    ```
 
-3. Access the application at: http://localhost:9912/
-
 ## Components
 
 - **Main Web UI**: [OM11MACOS](https://github.com/ErnestoAizenberg/OM11MACOS)
