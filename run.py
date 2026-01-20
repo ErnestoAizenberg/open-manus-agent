@@ -1,10 +1,11 @@
 import uvicorn
+from fastapi import FastAPI
 
 from config import Config, RedisConfig
 from om11 import create_app
 
 if __name__ == "__main__":
-    app = create_app(
+    app: FastAPI = create_app(
         app_config=Config(),
         redis_config=RedisConfig(),
     )
