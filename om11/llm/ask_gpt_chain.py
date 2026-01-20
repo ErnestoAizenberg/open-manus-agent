@@ -1,15 +1,18 @@
 # import openai
 import logging
+from typing import List, Dict, Any
 
 from dotenv import load_dotenv
+
+from om11.task.execute_task_chain import Task
 
 load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def ask_gpt_chain(command):
+def ask_gpt_chain(command) -> List[Task]:
     # Эпичная, но рабочая цепочка действий для демо
-    response_content = {
+    response_content: Dict[str, Any] = {
         "task_chain": [
             {
                 "action": "open_url",
@@ -87,7 +90,7 @@ def ask_gpt_chain(command):
     }
 
     try:
-        task_chain = response_content.get("task_chain", [])
+        task_chain: List[Dict[str, Any]] = response_content.get("task_chain", [])
         
         if not task_chain:
             raise ValueError("Пустая цепочка задач")

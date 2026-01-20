@@ -67,7 +67,7 @@ class BrowserManager:
             return True
         except Exception as e:
             raise Exception(f"Failed to open URL {url}: {str(e)}")
-
+            
     async def fill(self, selector: str, text: str, timeout: int = 5000) -> bool:
         if self._page is None:
             raise RuntimeError("Browser page is not initialized.")

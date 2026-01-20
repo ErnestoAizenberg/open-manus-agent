@@ -13,7 +13,7 @@ class Config:
 
 
 def create_app(app_config, redis_config) -> FastAPI:
-    app = FastAPI()
+    app: FastAPI = FastAPI()
     app.state.config = app_config
     # redis_client = init_redis(redis_config)
 

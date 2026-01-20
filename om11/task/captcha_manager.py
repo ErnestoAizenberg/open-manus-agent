@@ -136,7 +136,7 @@ class CaptchaSolver:
         # First attempt with main service
         try:
             if main_api_key:
-                solution = await self._solve_with_service(
+                solution: CaptchaSolution = await self._solve_with_service(
                     main_service, captcha_type, main_api_key, params
                 )
             else:
@@ -154,7 +154,7 @@ class CaptchaSolver:
 
                 captcha_type, params = detection_result
                 if fallback_api_key:
-                    solution = await self._solve_with_service(
+                    solution: CaptchaSolution = await self._solve_with_service(
                         fallback_service, captcha_type, fallback_api_key, params
                     )
                 else:
@@ -190,9 +190,10 @@ class CaptchaSolver:
         except Exception:
             fallback_service = CAPTCHA_PROVIDERS[captcha_type]["fallback"]
             if fallback_service != service:
-                return await self._solve_with_service(
+                solution: CaptchaSolution = await self._solve_with_service(
                     fallback_service, captcha_type, api_key, params
                 )
+                return solution
             raise
 
     # --- SERVICE IMPLEMENTATIONS ---

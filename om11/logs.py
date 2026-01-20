@@ -1,10 +1,11 @@
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
-from typing import Dict
+from logging import Logger, StreamHandler
+from typing import Dict, Final
 
 # Color codes
-COLORS: Dict[str, str] = {
+COLORS: Final[Dict[str, str]] = {
     "RESET": "\x1b[0m",
     "BLACK": "\x1b[30m",
     "RED": "\x1b[31m",
@@ -16,7 +17,7 @@ COLORS: Dict[str, str] = {
     "WHITE": "\x1b[37m",
 }
 
-LOG_LEVEL_COLORS: Dict[str, str] = {
+LOG_LEVEL_COLORS: Final[Dict[str, str]] = {
     "DEBUG": COLORS["BLUE"],
     "INFO": COLORS["GREEN"],
     "WARNING": COLORS["YELLOW"],
@@ -64,7 +65,7 @@ def setup_logger(
     Returns:
         Configured logger instance
     """
-    logger = logging.getLogger(name)
+    logger: Logger = logging.getLogger(name)
     logger.setLevel(level)
 
     # Clear existing handlers to avoid duplicate logs
@@ -72,7 +73,7 @@ def setup_logger(
         logger.handlers.clear()
 
     # Console handler with colored output
-    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler: StreamHandler = logging.StreamHandler(sys.stdout)
     console_formatter = ColoredFormatter(
         "%(asctime)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
     )
@@ -93,11 +94,11 @@ def setup_logger(
     return logger
 
 
-logger = setup_logger(log_file="app.log")
+logger: Logger = setup_logger(log_file="app.log")
 
 # Example usage
 if __name__ == "__main__":
-    logger = setup_logger(log_file="app.log")
+    logger: Logger = setup_logger(log_file="app.log")
 
     logger.debug("Debug message for detailed information")
     logger.info("System is running normally")

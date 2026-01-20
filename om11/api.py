@@ -1,4 +1,5 @@
 from typing import List
+from logging import Logger
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
@@ -11,7 +12,7 @@ from om11.user_manager_v1 import CaptchaConfig, CaptchaService, DBManager
 
 
 class APIHandler:
-    def __init__(self, app: FastAPI, config, logger):
+    def __init__(self, app: FastAPI, config, logger: Logger):
         self.app = app
         self.config = config
         self.logger = logger
