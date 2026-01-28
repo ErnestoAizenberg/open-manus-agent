@@ -1,12 +1,6 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/requests-2.31.0-3776AB?style=flat-square&logo=python&logoColor=white" alt="requests">
-  <img src="https://img.shields.io/badge/httpx-0.25.0-00B4AB?style=flat-square&logo=python&logoColor=white" alt="httpx">
-  <img src="https://img.shields.io/badge/uvicorn-0.23.0-6E00F7?style=flat-square&logo=python&logoColor=white" alt="uvicorn">
-  <img src="https://img.shields.io/badge/FastAPI-0.103.0-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI">
-  <img src="https://img.shields.io/badge/openai->=0.1.0-412991?style=flat-square&logo=openai&logoColor=white" alt="openai">
-  <img src="https://img.shields.io/badge/playwright-1.39.0-FF6B00?style=flat-square&logo=playwright&logoColor=white" alt="playwright">
-</p> 
+[![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=FFD43B)](https://www.python.org/)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.103.0-000000?style=for-the-badge&logo=fastapi)
+![Playwright](https://img.sheilds.io/badge/Playwright?style=for-the-bafge&logo=playwright)
 
 # Open Manus Agent
 
