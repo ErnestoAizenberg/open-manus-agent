@@ -1,5 +1,5 @@
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=FFD43B)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.103.0-000000?style=for-the-badge&logo=fastapi)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.103.0-000000?style=for-the-badge&logo=fastapi)
 [![Playwright](https://img.shields.io/badge/Playwright-000000?style=for-the-badge&logo=playwright&logoColor=white)](https://playwright.dev)
 
 # Open Manus Agent
